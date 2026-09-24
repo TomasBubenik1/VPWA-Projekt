@@ -1,17 +1,13 @@
 <template>
-  <q-page class="flex flex-center">
-    <div class="column items-center">
-      <img
-        alt="Quasar logo"
-        src="~@/assets/quasar-logo-vertical.svg"
-        style="width: 200px; height: 200px"
-      />
-
-      <q-btn class="q-mt-md" color="primary" to="/second" label="Go to Second Page" no-caps />
-    </div>
+  <AuthPanel v-if="!store.user" />
+  <q-page v-else class="workspace-loading">
+    <div><div class="brand-mark"><q-icon name="forum" /></div><h1>Ahoj, {{ store.user.fullName }}.</h1><p>Pracovný priestor pripravujeme…</p></div>
   </q-page>
 </template>
 
 <script setup lang="ts">
-//
+import AuthPanel from '@/components/AuthPanel.vue';
+import { usePrototypeStore } from '@/stores/prototype';
+
+const store = usePrototypeStore();
 </script>

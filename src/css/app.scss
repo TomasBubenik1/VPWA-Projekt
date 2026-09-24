@@ -1,1 +1,43 @@
-// app global css
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+body { background: #f6f5f2; color: #24243a; font-family: 'DM Sans', sans-serif; }
+button, input { font: inherit; }
+.q-layout { background: #f6f5f2; }
+.auth-screen { min-height: 100vh; display: grid; grid-template-columns: minmax(360px, .95fr) 1.05fr; background: #fff; }
+.auth-story { min-height: 100vh; padding: 42px clamp(32px, 6vw, 92px); color: #fff; display: flex; flex-direction: column; justify-content: space-between; background: radial-gradient(ellipse at 14% 88%, #49408c 0, transparent 37%), radial-gradient(ellipse at 87% 14%, #7269dd 0, transparent 38%), #302d61; }
+.brand-lockup { display: flex; align-items: center; gap: 12px; color: white; font: 800 23px Manrope, sans-serif; letter-spacing: -.7px; }
+.brand-mark { width: 40px; height: 40px; display: inline-grid; place-items: center; color: #fff; border-radius: 13px; background: #7267e8; font-size: 21px; box-shadow: 0 8px 22px #221d5360; }
+.auth-story .brand-mark { background: #fff; color: #554abd; }
+.eyebrow { color: #7770dc; font-size: 10px; font-weight: 700; letter-spacing: 1.6px; }
+.auth-story .eyebrow { color: #bab5ff; }
+.auth-story h1 { margin: 18px 0; color: white; font: 800 clamp(34px, 4.2vw, 58px)/1.16 Manrope, sans-serif; letter-spacing: -2.3px; }
+.auth-story h1 span { color: #c3bfff; }
+.auth-story p { max-width: 390px; color: #d6d4eb; font-size: 15px; line-height: 1.75; }
+.story-footer { display: flex; align-items: center; gap: 14px; color: #dedcf0; font-size: 13px; }
+.avatar-stack { display: flex; padding-left: 4px; }
+.avatar-stack i { width: 30px; height: 30px; display: grid; place-items: center; margin-left: -4px; color: #373359; border: 2px solid #45417c; border-radius: 50%; background: #d5cffd; font: 700 9px 'DM Sans'; font-style: normal; }
+.avatar-stack i:nth-child(2) { background: #f8c8aa; }.avatar-stack i:nth-child(3) { background: #a8d6c9; }.avatar-stack i:nth-child(4) { color: white; background: #7168c2; }
+.auth-form-wrap { display: grid; place-items: center; padding: 42px 24px; }
+.auth-card { width: min(100%, 410px); background: transparent; }
+.auth-heading .eyebrow { margin-bottom: 12px; }
+.auth-heading h2 { margin: 0; font: 750 25px Manrope, sans-serif; letter-spacing: -.8px; }
+.auth-heading p { margin: 8px 0 25px; color: #85859a; font-size: 14px; }
+.auth-tabs { height: 42px; border-bottom: 1px solid #ecebf2; margin-bottom: 23px; }
+.auth-tabs .q-tab { min-height: 42px; padding: 0 14px; font-weight: 600; }
+.auth-fields { display: flex; flex-direction: column; gap: 8px; }
+.field-label { margin: 7px 0 1px; color: #3b3a52; font-size: 12px; font-weight: 700; }
+.auth-fields .q-field__control { border-radius: 9px; background: white; }
+.auth-fields .q-field--outlined .q-field__control:before { border-color: #e5e3ec; }
+.auth-fields .q-field__native, .auth-fields .q-field__input { font-size: 13px; }
+.password-label { display: flex; align-items: center; justify-content: space-between; }
+.password-label a { color: #6658d3; font-size: 11px; font-weight: 600; text-decoration: none; }
+.auth-submit { height: 46px; margin-top: 12px; border-radius: 9px; font-weight: 700; box-shadow: 0 8px 17px #6658d32b; }
+.auth-message { margin-top: 7px; color: #a64141; background: #fff0ef; font-size: 12px; }
+.auth-switch { margin-top: 24px; color: #85859a; text-align: center; font-size: 12px; }
+.auth-switch button { padding: 0; border: 0; color: #6658d3; background: transparent; cursor: pointer; font-weight: 700; }
+.prototype-note { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 36px; color: #a1a0b0; font-size: 10px; }
+.workspace-loading { min-height: 100vh; display: grid; place-items: center; text-align: center; }
+.workspace-loading .brand-mark { margin: auto; }
+.workspace-loading h1 { font-family: Manrope, sans-serif; }
+@media (max-width: 760px) { .auth-screen { grid-template-columns: 1fr; } .auth-story { min-height: auto; gap: 58px; padding: 24px; } .auth-story h1 { font-size: 35px; letter-spacing: -1.4px; } .auth-story p { font-size: 13px; } .story-footer { display: none; } .auth-form-wrap { padding: 32px 22px 48px; } }

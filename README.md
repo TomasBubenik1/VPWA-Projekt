@@ -1,6 +1,16 @@
-# VPWA Projekt (vpwa-projekt)
+# Convo – VPWA semestrálny projekt
 
-## Install the dependencies
+Klikateľný prototyp aplikácie na textovú komunikáciu podľa [zadania VPWA27](https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md). Fáza 1 sa sústreďuje na responzívne používateľské rozhranie pre všetkých 11 prípadov použitia a UML návrh logického dátového modelu. Prototyp používa lokálne demo dáta.
+
+## Fáza 1 – frontendový prototyp
+
+1. **Účty a základná štruktúra:** registrácia, prihlásenie, odhlásenie a responzívny pracovný priestor.
+2. **Kanály a členstvo:** zoznam, vytvorenie, verejné pripojenie, súkromné pozvánky, opustenie a zrušenie kanála.
+3. **Konverzácia a nastavenia:** správy a príkazy, adresovanie, história, notifikácie, stav používateľa, členovia a písanie.
+
+Detaily dátového modelu a diagram sú v `docs/`.
+
+## Spustenie prototypu
 
 ```bash
 npm install
@@ -12,24 +22,8 @@ npm install
 npm run dev
 ```
 
-### Format & Lint the files
+Všetky ukážkové úkony prebiehajú lokálne v prehliadači. Prihlásenie má predvyplnený demo účet.
 
-```bash
-npm run lint
-```
+## Technológie
 
-...or just check formatting & linting:
-
-```bash
-npm run lint:check
-```
-
-### Build the app for production
-
-```bash
-npm run build
-```
-
-### Customize the configuration
-
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-file).
+- Quasar, Vue 3, TypeScript, Pinia
