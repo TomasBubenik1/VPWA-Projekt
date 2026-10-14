@@ -2,77 +2,67 @@
 // Apple-inspired web styling, not Apple's native material implementation.
 // Radius scale: controls 10px, dialogs 18px, avatars 12px. Layers: chrome 1, toast 7000.
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --surface: #ffffff;
-  --sidebar: #f1f5f9;
-  --canvas: #f8fafc;
-  --text: #1e293b;
-  --muted: #64748b;
-  --line: #e2e8f0;
-  --line-soft: rgba(30, 41, 59, 0.12);
+  --sidebar: #f4f4f5;
+  --canvas: #fafafa;
+  --text: #27272a;
+  --muted: #71717a;
+  --line: #e4e4e7;
+  --line-soft: rgba(39, 39, 42, 0.12);
   --accent: #047857;
-  --accent-soft: #bbf7d0;
+  --accent-soft: #a7f3d0;
+  // Accent for small text and icons; dark mode needs a lighter shade to stay readable.
+  --accent-text: #065f46;
   --hover: var(--accent-soft);
   --q-primary: var(--accent);
   --primary-button-text: #ffffff;
   --q-negative: #b63646;
-  --tone-1-bg: var(--accent-soft);
-  --tone-1-text: #14532d;
-  --tone-2-bg: #dbeafe;
-  --tone-2-text: #1d4ed8;
-  --presence-online: var(--accent);
+  --avatar-bg: #a7f3d0;
+  --avatar-text: #065f46;
+  --presence-online: #059669;
   --presence-dnd: #a8711f;
-  --presence-offline: #8b8c99;
+  --presence-offline: #8a8a8e;
   --shadow: 0 1px 2px rgba(32, 40, 56, 0.06), 0 6px 18px rgba(32, 40, 56, 0.08);
   --shadow-lg: 0 2px 6px rgba(32, 40, 56, 0.06), 0 18px 40px rgba(32, 40, 56, 0.12);
-  --mention-bg: var(--accent-soft);
-  --message-own-bg: #86efac;
-  --message-own-text: #1e293b;
-  --message-received-bg: #ffffff;
-  --message-received-text: #1e293b;
-  --message-own-hover: #6ee7b7;
-  --message-received-hover: #f1f5f9;
-  --message-mentioned-hover: var(--accent-soft);
-  --tone-3-bg: #f6dfe6;
-  --tone-3-text: #8a3a55;
-  --tone-4-bg: #d8eef1;
-  --tone-4-text: #23656f;
+  // Bubbles: own messages use the primary color, others stay neutral, mentions get a primary tint.
+  --mention-bg: #d1fae5;
+  --mention-line: #6ee7b7;
+  --message-own-bg: var(--accent);
+  --message-own-text: #ffffff;
+  --message-received-bg: var(--surface);
+  --message-received-text: var(--text);
+  --message-own-hover: #065f46;
+  --message-received-hover: #f4f4f5;
+  --message-mentioned-hover: #a7f3d0;
 }
 body.body--dark {
-  --surface: #1c2541;
-  --sidebar: #111a32;
-  --canvas: #0b132b;
-  --text: #f1f5f9;
-  --muted: #b7c3d5;
-  --line: #33415e;
+  --surface: #262626;
+  --sidebar: #202020;
+  --canvas: #181818;
+  --text: #f4f4f5;
+  --muted: #b4b4b8;
+  --line: #3f3f46;
   --line-soft: rgba(255, 255, 255, 0.12);
-  --accent: #6ee7b7;
-  --accent-soft: #064e3b;
-  --hover: var(--surface);
-  --q-primary: var(--accent);
-  --primary-button-text: #064e3b;
+  --accent-soft: #0d4f3d;
+  --accent-text: #6ee7b7;
+  --hover: #303036;
   --q-negative: #f08b98;
-  --tone-1-bg: var(--accent-soft);
-  --tone-1-text: #a7f3d0;
-  --tone-2-bg: #1e3a5f;
-  --tone-2-text: #bfdbfe;
-  --presence-online: var(--accent);
+  --avatar-bg: #153f32;
+  --avatar-text: #a7f3d0;
+  --presence-online: #10b981;
   --presence-dnd: #e0a64a;
   --presence-offline: #9a9ba8;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 18px rgba(0, 0, 0, 0.22);
   --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.3), 0 18px 40px rgba(0, 0, 0, 0.3);
-  --mention-bg: #0c3d32;
-  --message-own-bg: #064e3b;
-  --message-own-text: #f1f5f9;
-  --message-received-bg: #1c2541;
-  --message-received-text: #f1f5f9;
-  --message-own-hover: #065f46;
-  --message-received-hover: #26304f;
-  --message-mentioned-hover: #105040;
-  --tone-3-bg: #3d2a31;
-  --tone-3-text: #e6b6c6;
-  --tone-4-bg: #213a3f;
-  --tone-4-text: #9fd3dc;
+  --mention-bg: #11352b;
+  --mention-line: #1f5a47;
+  // Tokens built from var() in :root keep their light values, so dark mode sets them again.
+  --message-own-bg: #047857;
+  --message-received-bg: #262626;
+  --message-received-text: #f4f4f5;
+  --message-own-hover: #06855f;
+  --message-received-hover: #2e2e33;
+  --message-mentioned-hover: #154134;
 }
 * {
   box-sizing: border-box;
@@ -230,6 +220,7 @@ a:focus-visible,
   flex-direction: column;
   position: relative;
   padding-left: 44%;
+  background: var(--surface);
 }
 .auth-welcome {
   position: absolute;
@@ -244,80 +235,28 @@ a:focus-visible,
   gap: 32px;
   padding: clamp(28px, 4vw, 64px);
   overflow: hidden;
+  isolation: isolate;
 }
-.auth-welcome-title {
-  max-width: 11em;
-  font-size: clamp(34px, 3.6vw, 56px);
-  line-height: 1.08;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  color: var(--text);
+body:not(.body--dark) .auth-welcome {
+  background: #e4e3e1;
 }
-.auth-welcome .brand-lockup {
-  color: var(--accent);
+.auth-art {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+body.body--dark .auth-art {
+  mix-blend-mode: screen;
 }
 .auth-intro {
   margin-top: 8px;
   color: var(--muted);
   font-size: 15px;
-}
-// Preview cards: three real features (invite, mention, typing) shown with the app's own styles.
-.auth-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: min(100%, 440px);
-}
-.preview-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  font-size: 13px;
-}
-.preview-card b {
-  display: block;
-  font-size: 13px;
-}
-.preview-card small {
-  color: var(--muted);
-  font-size: 12px;
-}
-.preview-card p {
-  margin-top: 2px;
-  line-height: 1.45;
-}
-.preview-invite {
-  width: 86%;
-}
-.preview-invite > .q-icon {
-  color: var(--accent);
-}
-.preview-invite > div {
-  flex: 1;
-}
-.preview-pill {
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: var(--q-primary);
-  color: #fdfdfe;
-  font-size: 12px;
-  font-weight: 600;
-}
-.preview-message {
-  align-items: flex-start;
-  margin-left: 12%;
-}
-.preview-typing {
-  align-self: flex-start;
-  padding: 10px 14px;
-  margin-left: 4%;
-  color: var(--muted);
-  font-size: 12px;
 }
 .typing-dots {
   display: inline-flex;
@@ -331,21 +270,25 @@ a:focus-visible,
   background: currentColor;
   opacity: 0.5;
 }
-.auth-screen {
-  background: var(--surface);
-}
 .auth-theme-toggle {
   position: absolute;
   z-index: 2;
   top: 20px;
   right: 24px;
-  color: var(--accent);
+  color: var(--accent-text);
   border: 1px solid var(--line);
   background: var(--surface);
 }
 .auth-brand {
-  display: none;
-  padding: 20px 32px;
+  position: absolute;
+  z-index: 2;
+  --auth-brand-inset: clamp(28px, 4vw, 56px);
+  top: var(--auth-brand-inset);
+  left: calc(44% + var(--auth-brand-inset));
+  display: flex;
+  padding: 0;
+  color: var(--accent);
+  font-size: 30px;
   flex-shrink: 0;
 }
 .auth-form-wrap {
@@ -390,7 +333,7 @@ a:focus-visible,
   margin-bottom: 10px;
 }
 .settings-groups h3 .q-icon {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 19px;
 }
 .settings-groups .helper {
@@ -444,11 +387,6 @@ a:focus-visible,
   justify-content: space-between;
   padding: 2px 12px 14px;
 }
-.workspace-label {
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 650;
-}
 .channel-search {
   margin: 12px 8px 8px;
 }
@@ -460,11 +398,23 @@ a:focus-visible,
   background: var(--line);
   opacity: 0.7;
 }
+.workspace-sidebar > .sidebar-separator {
+  margin-inline: 12px;
+}
+.sidebar-invite-separator {
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
 .sidebar-scroll {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 0 4px;
+}
+.sidebar-scroll > * {
+  flex-shrink: 0;
 }
 .sidebar-heading {
   display: flex;
@@ -481,11 +431,14 @@ a:focus-visible,
   font-weight: inherit;
   letter-spacing: 0;
 }
+.channels-heading {
+  margin-right: 3px;
+}
 .sidebar-heading > span,
 .count-badge {
   font-size: 11px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 6px;
   padding: 1px 6px;
 }
@@ -501,41 +454,51 @@ a:focus-visible,
 .channel-list .q-item__section--side {
   color: var(--muted);
 }
+.channel-list .channel-icon {
+  background: var(--line);
+  color: var(--muted);
+}
 .channel-list .channel-selected {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--line);
+  color: var(--text);
   font-weight: 600;
 }
 .channel-list .channel-selected .channel-icon {
-  background: var(--surface);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 .invite-card {
-  padding: 10px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 12px;
   background: var(--surface);
   border: 1px solid var(--line);
-  box-shadow: none;
   border-radius: 12px;
   margin: 4px 4px 8px;
 }
-.invite-card b {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.invite-copy {
+  min-width: 0;
+}
+.invite-copy b {
+  display: block;
   font-size: 13px;
 }
 .invite-card .channel-icon {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .invite-card p {
   font-size: 12px;
   color: var(--muted);
-  margin: 4px 0 6px 38px;
+  margin: 4px 0 8px;
 }
 .invite-actions {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 6px;
-  margin-left: 38px;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
 }
 .invite-card .q-btn {
   min-height: 28px;
@@ -561,18 +524,28 @@ a:focus-visible,
   font-size: 19px;
 }
 .sidebar-profile {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 0;
   background: transparent;
   color: var(--text);
   padding: 10px 10px 4px;
   text-align: left;
   cursor: pointer;
   border-radius: 0 0 10px 10px;
+}
+.sidebar-profile::before {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  content: '';
+  background: var(--line);
 }
 .sidebar-profile > .q-icon {
   color: var(--muted);
@@ -612,29 +585,13 @@ a:focus-visible,
   height: 36px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--avatar-bg);
+  color: var(--avatar-text);
   display: inline-grid;
   place-items: center;
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.025em;
-}
-.avatar-tone-1 {
-  background: var(--tone-1-bg);
-  color: var(--tone-1-text);
-}
-.avatar-tone-2 {
-  background: var(--tone-2-bg);
-  color: var(--tone-2-text);
-}
-.avatar-tone-3 {
-  background: var(--tone-3-bg);
-  color: var(--tone-3-text);
-}
-.avatar-tone-4 {
-  background: var(--tone-4-bg);
-  color: var(--tone-4-text);
 }
 .workspace-main {
   position: relative;
@@ -672,7 +629,7 @@ a:focus-visible,
   height: 28px;
   border-radius: 8px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .channel-icon-large {
   width: 34px;
@@ -747,7 +704,7 @@ a:focus-visible,
   margin-bottom: 8px;
   border-radius: 20px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   box-shadow: var(--shadow);
 }
 .empty-state p {
@@ -794,6 +751,7 @@ a:focus-visible,
   color: var(--message-received-text);
 }
 .message-mentioned:not(.message-own) {
+  border-color: var(--mention-line);
   background: var(--mention-bg);
 }
 .message-own {
@@ -804,10 +762,11 @@ a:focus-visible,
 .message-own .message-copy time,
 .message-own .self-label {
   color: var(--message-own-text);
-  opacity: 0.72;
+  opacity: 0.78;
 }
 .message-own .mention {
   color: inherit;
+  font-weight: 650;
 }
 .message-own .message-copy {
   text-align: left;
@@ -819,7 +778,7 @@ a:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 11px;
   font-weight: 600;
 }
@@ -850,7 +809,7 @@ a:focus-visible,
   overflow-wrap: anywhere;
 }
 .mention {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 550;
 }
 .new-messages {
@@ -886,17 +845,15 @@ a:focus-visible,
   color: var(--muted);
 }
 .typing-line button {
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  padding: 6px 0;
-  cursor: pointer;
-  font-size: 12px;
-}
-.typing-line button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  cursor: pointer;
+  font-size: 12px;
 }
 .typing-line .typing-hint {
   margin-left: 4px;
@@ -925,9 +882,6 @@ a:focus-visible,
 }
 .composer-error {
   border-color: var(--q-negative);
-}
-.composer > .q-input {
-  flex: 1;
 }
 .composer > .q-field {
   flex: 1;
@@ -996,7 +950,7 @@ a:focus-visible,
   width: 460px;
   max-width: calc(100vw - 32px);
   border: 1px solid var(--line-soft);
-  border-radius: 18px !important;
+  border-radius: 18px;
   padding: 8px;
 }
 .dialog-heading {
@@ -1035,7 +989,7 @@ a:focus-visible,
   width: 380px;
   max-width: 95vw;
   height: 100dvh;
-  border-radius: 18px 0 0 18px !important;
+  border-radius: 18px 0 0 18px;
   padding: 12px 8px;
 }
 .side-panel .q-item {
@@ -1054,7 +1008,7 @@ a:focus-visible,
   padding: 12px 16px;
 }
 .help-dialog code {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 13px;
 }
 .prototype-dialog .q-card__section > .draft-preview {
@@ -1145,9 +1099,6 @@ a:focus-visible,
   }
 }
 @media (max-width: 700px) {
-  .workspace-page {
-    padding: 0;
-  }
   .desktop-sidebar {
     display: none;
   }
@@ -1230,6 +1181,7 @@ a:focus-visible,
     padding: 0 4px;
   }
   .auth-brand {
+    position: static;
     display: flex;
     padding: 16px 24px;
   }
@@ -1257,7 +1209,7 @@ a:focus-visible,
     font-size: 30px;
   }
   .side-panel {
-    border-radius: 0 !important;
+    border-radius: 0;
   }
   .prototype-dialog .q-card__section {
     padding: 14px;
@@ -1267,24 +1219,18 @@ a:focus-visible,
   .workspace-sidebar {
     padding-top: 12px;
   }
+  .sidebar-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .workspace-brand {
     padding-bottom: 14px;
-  }
-  .channel-search {
-    margin-block: 12px 8px;
-  }
-  .sidebar-heading {
-    margin-top: 10px;
   }
   .discover-heading {
     margin-top: 14px;
   }
   .invite-card {
     margin-bottom: 10px;
-  }
-  .channel-list .q-item {
-    min-height: 34px;
-    padding-block: 5px;
   }
   .auth-card {
     padding: 0;
@@ -1380,11 +1326,11 @@ a:focus-visible,
 }
 @media (prefers-contrast: more) {
   :root {
-    --muted: #42424e;
-    --line: #7c7c89;
+    --muted: #424242;
+    --line: #7c7c7c;
   }
   body.body--dark {
-    --muted: #d5d5e0;
-    --line: #999aa7;
+    --muted: #d5d5d5;
+    --line: #999999;
   }
 }

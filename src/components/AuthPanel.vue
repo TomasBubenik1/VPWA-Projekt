@@ -1,29 +1,7 @@
 <template>
   <main class="auth-screen">
     <aside class="auth-welcome" aria-label="Convo">
-      <div class="brand-lockup"><q-icon name="forum" size="26px" /><span>convo</span></div>
-      <!-- Decorative preview built from the demo data: an invite, a mention and typing. -->
-      <div class="auth-preview" aria-hidden="true">
-        <div class="preview-card preview-invite">
-          <q-icon name="lock_outline" size="18px" />
-          <div>
-            <b>launch-week</b>
-            <small>@jules vás pozýva</small>
-          </div>
-          <span class="preview-pill">Prijať</span>
-        </div>
-        <div class="preview-card preview-message">
-          <UserAvatar nickname="mira" />
-          <div>
-            <b>Mira Novotná</b>
-            <p><span class="mention">@alex</span> pozrieš ešte odosielanie cez Enter?</p>
-          </div>
-        </div>
-        <div class="preview-card preview-typing">
-          <span class="typing-dots"><i /><i /><i /></span>@nina píše
-        </div>
-      </div>
-      <p class="auth-welcome-title">Dobrý tím začína rozhovorom.</p>
+      <img class="auth-art" :src="isDark ? authArtDark : authArtLight" alt="" />
     </aside>
     <q-btn
       class="auth-theme-toggle"
@@ -36,7 +14,7 @@
       <q-tooltip>{{ isDark ? 'Svetlý režim' : 'Tmavý režim' }}</q-tooltip>
     </q-btn>
     <header class="auth-brand brand-lockup">
-      <q-icon name="forum" size="28px" /><span>convo</span>
+      <q-icon name="forum" size="30px" /><span>convo</span>
     </header>
     <section class="auth-form-wrap" aria-labelledby="auth-title">
       <div class="auth-card">
@@ -137,7 +115,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
-import UserAvatar from './UserAvatar.vue';
+import authArtDark from '@/assets/auth-abstract.png';
+import authArtLight from '@/assets/auth-abstract-light.png';
 import { usePrototypeStore } from '@/stores/prototype';
 const store = usePrototypeStore();
 const $q = useQuasar();

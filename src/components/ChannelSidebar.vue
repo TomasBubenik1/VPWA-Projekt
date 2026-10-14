@@ -11,7 +11,6 @@
         @click="$emit('close')"
       />
     </div>
-    <div class="workspace-label">FIIT Workspace</div>
     <q-input
       v-model="query"
       outlined
@@ -36,11 +35,11 @@
           Pozvánky <span>{{ invites.length }}</span>
         </h2>
         <div v-for="invite in invites" :key="invite.channel.id" class="invite-card">
-          <b
-            ><q-icon class="channel-icon" name="mail_outline" size="16px" />
-            {{ invite.channel.name }}</b
-          >
-          <p>@{{ invite.from }} vás pozýva</p>
+          <q-icon class="channel-icon" name="mail_outline" size="16px" />
+          <div class="invite-copy">
+            <b>{{ invite.channel.name }}</b>
+            <p>@{{ invite.from }} vás pozýva</p>
+          </div>
           <div class="invite-actions">
             <q-btn
               unelevated
@@ -50,10 +49,11 @@
               size="sm"
               @click="accept(invite.channel.id)"
             /><q-btn flat no-caps label="Odmietnuť" size="sm" @click="decliningInvite = invite" />
-          </div></div
-      ></template>
-      <q-separator v-if="invites.length" class="sidebar-separator" />
-      <div class="sidebar-heading">
+          </div>
+        </div>
+      </template>
+      <q-separator v-if="invites.length" class="sidebar-separator sidebar-invite-separator" />
+      <div class="sidebar-heading channels-heading">
         <h2>Vaše kanály</h2>
         <q-btn flat round dense icon="add" aria-label="Vytvoriť kanál" @click="$emit('create')"
           ><q-tooltip>Vytvoriť kanál</q-tooltip></q-btn
@@ -91,7 +91,11 @@
       <q-separator class="sidebar-separator" />
       <h2 class="sidebar-heading discover-heading">Objaviť kanály</h2>
       <q-list class="channel-list"
-        ><q-item v-for="channel in discover" :key="channel.id" clickable @click="join(channel.id)"
+        ><q-item
+          v-for="channel in discover"
+          :key="channel.id"
+          clickable
+          @click="requestJoin(channel.id)"
           ><q-item-section avatar
             ><q-icon class="channel-icon" name="tag" size="16px" /></q-item-section
           ><q-item-section>{{ channel.name }}</q-item-section
@@ -130,6 +134,13 @@
     </button>
   </aside>
   <ConfirmationDialog
+    v-model="joinOpen"
+    title="Pripojiť sa ku kanálu?"
+    :message="`Pripojíte sa do verejného kanála #${joiningChannel?.name ?? ''}.`"
+    confirm-label="Pripojiť sa"
+    @confirm="confirmJoin"
+  />
+  <ConfirmationDialog
     v-model="declineOpen"
     title="Odmietnuť pozvánku?"
     :message="`Pozvánka do #${decliningInvite?.channel.name ?? ''} sa odstráni.`"
@@ -143,9 +154,17 @@ import { computed, ref } from 'vue';
 import ConfirmationDialog from './ConfirmationDialog.vue';
 import UserAvatar from './UserAvatar.vue';
 import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import type { PrototypeChannel } from '@/stores/prototype';
 const emit = defineEmits<{ close: []; create: []; settings: []; demo: [] }>();
 const store = usePrototypeStore();
 const query = ref('');
+const joiningChannel = ref<PrototypeChannel | null>(null);
+const joinOpen = computed({
+  get: () => joiningChannel.value !== null,
+  set: (value: boolean) => {
+    if (!value) joiningChannel.value = null;
+  },
+});
 const decliningInvite = ref<(typeof invites.value)[number] | null>(null);
 const declineOpen = computed({
   get: () => !!decliningInvite.value,
@@ -170,6 +189,12 @@ const invites = computed(() =>
     return channel && matches(channel.name) ? [{ ...i, channel }] : [];
   }),
 );
+function requestJoin(id: string) {
+  joiningChannel.value = discover.value.find((channel) => channel.id === id) ?? null;
+}
+function confirmJoin() {
+  if (joiningChannel.value) join(joiningChannel.value.id);
+}
 function select(id: string) {
   store.selectChannel(id);
   emit('close');

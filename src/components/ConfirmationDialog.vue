@@ -33,7 +33,7 @@ withDefaults(
 const emit = defineEmits<{ confirm: [] }>();
 
 function confirm() {
-  open.value = false;
   emit('confirm');
+  open.value = false;
 }
 </script>

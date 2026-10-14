@@ -1,5 +1,5 @@
 <template>
-  <span class="avatar" :class="`avatar-tone-${tone}`" aria-hidden="true">
+  <span class="avatar" aria-hidden="true">
     {{ initials }}
   </span>
 </template>
@@ -8,7 +8,7 @@
 import { computed } from 'vue';
 import { usePrototypeStore } from '@/stores/prototype';
 
-// One place for initials and avatar color, used by the sidebar, history and member list.
+// One place for initials, used by the sidebar, history and member list.
 const props = defineProps<{ nickname: string }>();
 const store = usePrototypeStore();
 
@@ -21,9 +21,5 @@ const initials = computed(() =>
     .map((part) => part[0])
     .slice(0, 2)
     .join(''),
-);
-// Stable tone per person: the sum of character codes always gives the same of 5 colors.
-const tone = computed(
-  () => [...props.nickname].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5,
 );
 </script>
