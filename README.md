@@ -8,7 +8,7 @@ Klikateľný prototyp aplikácie na textovú komunikáciu podľa [zadania VPWA27
 2. **Kanály a členstvo:** zoznam, vytvorenie, verejné pripojenie, súkromné pozvánky, opustenie a zrušenie kanála.
 3. **Konverzácia a nastavenia:** správy a príkazy, adresovanie, história, notifikácie, stav používateľa, členovia a písanie.
 
-Detaily dátového modelu a diagram sú v `docs/`.
+UML logický model v JPG/JPEG treba doplniť ako samostatný výstup prvej fázy.
 
 ## Spustenie prototypu
 
@@ -22,7 +22,16 @@ npm install
 npm run dev
 ```
 
-Všetky ukážkové úkony prebiehajú lokálne v prehliadači. Prihlásenie má predvyplnený demo účet.
+Všetky ukážkové úkony prebiehajú lokálne v prehliadači. Prihlásenie má predvyplnený demo účet. V paneli **Vyskúšať scenáre** môžete prepínať demo účty, doručovať správy, simulovať skrytú aplikáciu a spustiť živý náhľad písania. Prototyp neobsahuje serverovú autentifikáciu; heslá sa neukladajú.
+
+## Overenie
+
+```bash
+npm run typecheck
+npm test
+npm run lint:check
+npm run build
+```
 
 ## Technológie
 
