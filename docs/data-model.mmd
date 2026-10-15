@@ -1,0 +1,108 @@
+---
+title: Convo — logický dátový model
+config:
+  theme: base
+  look: classic
+  layout: elk
+  themeVariables:
+    primaryColor: '#f4f4f5'
+    primaryTextColor: '#181818'
+    primaryBorderColor: '#71717a'
+    lineColor: '#525252'
+    noteBkgColor: '#fafafa'
+    noteTextColor: '#27272a'
+    noteBorderColor: '#a3a3a3'
+  class:
+    hideEmptyMembersBox: true
+---
+classDiagram
+    direction LR
+
+    %% Zadanie: https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md
+    %% Syntax: https://mermaid.js.org/syntax/classDiagram.html
+    %% PK = primárny kľúč, FK = cudzí kľúč, UQ = unikátna hodnota.
+    %% Všetky atribúty sú NOT NULL okrem responded_at.
+    %% #40; a #41; vykreslia zátvorky bez interpretácie atribútu ako UML metódy.
+
+    class User {
+        INT id PK
+        VARCHAR#40;100#41; first_name
+        VARCHAR#40;100#41; last_name
+        VARCHAR#40;32#41; nickname UQ
+        VARCHAR#40;254#41; email UQ
+        VARCHAR#40;255#41; password_hash
+        ENUM preferred_status
+        ENUM notification_mode
+        TIMESTAMP created_at
+    }
+    class Channel {
+        INT id PK
+        VARCHAR#40;64#41; name UQ
+        ENUM type
+        INT owner_id FK
+        TIMESTAMP created_at
+    }
+    class ChannelMembership {
+        INT id PK
+        INT user_id FK
+        INT channel_id FK
+        TIMESTAMP joined_at
+    }
+    class Message {
+        INT id PK
+        INT channel_id FK
+        INT author_id FK
+        TEXT content
+        TIMESTAMP created_at
+    }
+    class MessageMention {
+        INT id PK
+        INT message_id FK
+        INT user_id FK
+    }
+    class Invitation {
+        INT id PK
+        INT channel_id FK
+        INT inviter_id FK
+        INT invitee_id FK
+        ENUM status
+        TIMESTAMP created_at
+        TIMESTAMP responded_at NULL
+    }
+    class KickVote {
+        INT id PK
+        INT channel_id FK
+        INT voter_id FK
+        INT target_user_id FK
+        TIMESTAMP created_at
+    }
+    class ChannelBan {
+        INT id PK
+        INT channel_id FK
+        INT user_id FK
+        TIMESTAMP created_at
+    }
+
+    User "1" -- "0..*" Channel : vlastní
+    User "1" -- "0..*" ChannelMembership : člen
+    Channel "1" -- "1..*" ChannelMembership : členstvo
+    User "1" -- "0..*" Message : autor
+    Channel "1" -- "0..*" Message : obsahuje
+    Message "1" -- "0..*" MessageMention : označenie
+    User "1" -- "0..*" MessageMention : adresát
+    Channel "1" -- "0..*" Invitation : pozvánka
+    User "1" -- "0..*" Invitation : pozývajúci
+    User "1" -- "0..*" Invitation : pozvaný
+    Channel "1" -- "0..*" KickVote : hlasovanie
+    User "1" -- "0..*" KickVote : hlasujúci
+    User "1" -- "0..*" KickVote : cieľ
+    Channel "1" -- "0..*" ChannelBan : zákaz
+    User "1" -- "0..*" ChannelBan : zablokovaný
+
+    note for User "preferred_status ENUM: online, dnd, offline<br/>DEFAULT online<br/>notification_mode ENUM: all, mentions_only<br/>DEFAULT all"
+    note for Channel "type ENUM: public, private<br/>DEFAULT public<br/>Správca je vždy členom kanála."
+    note for ChannelMembership "UQ: user_id + channel_id"
+    note for MessageMention "UQ: message_id + user_id"
+    note for Invitation "status ENUM: pending, accepted, declined, cancelled<br/>DEFAULT pending<br/>Najviac jedna pending pozvánka<br/>na channel_id + invitee_id."
+    note for KickVote "UQ: channel_id + voter_id + target_user_id<br/>Iba verejný kanál;<br/>cieľ nesmie byť správca."
+    note for ChannelBan "UQ: channel_id + user_id<br/>Správca nesmie mať ban<br/>vo vlastnom kanáli."
