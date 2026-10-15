@@ -1,5 +1,13 @@
 <template>
-  <div ref="scroller" class="col overflow-auto" tabindex="0" aria-label="História správ">
+  <q-scroll-area
+    ref="scrollArea"
+    class="col"
+    :vertical-thumb-style="{ width: '7px', borderRadius: '4px' }"
+    :vertical-bar-style="{ right: '5px', width: '7px' }"
+    :horizontal-offset="[0, 5]"
+    tabindex="0"
+    aria-label="História správ"
+  >
     <div class="column no-wrap q-px-md q-pt-sm q-pb-xl">
       <div ref="topSentinel" aria-hidden="true" />
       <q-btn
@@ -83,12 +91,12 @@
         @click="toBottom"
       />
     </q-page-sticky>
-  </div>
+  </q-scroll-area>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useQuasar } from 'quasar';
+import { useQuasar, type QScrollArea } from 'quasar';
 import UserAvatar from './UserAvatar.vue';
 import { mentions, usePrototypeStore } from '@/stores/prototype';
 import type { PrototypeChannel, PrototypeMessage } from '@/stores/prototype';
@@ -103,7 +111,8 @@ const props = defineProps<{ channel: PrototypeChannel }>();
 const store = usePrototypeStore();
 const $q = useQuasar();
 const isDark = computed(() => $q.dark.isActive);
-const scroller = ref<HTMLElement>();
+const scrollArea = ref<QScrollArea>();
+const scroller = computed(() => scrollArea.value?.getScrollTarget());
 const topSentinel = ref<HTMLElement>();
 const bottomSentinel = ref<HTMLElement>();
 const visibleCount = ref(pageSize);

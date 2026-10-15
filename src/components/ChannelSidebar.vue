@@ -32,158 +32,164 @@
           @click="query = ''" /></template
     ></q-input>
     <q-separator class="q-ma-sm" />
-    <nav class="col overflow-auto q-px-xs" aria-label="Kanály">
-      <template v-if="invites.length"
-        ><h2
+    <q-scroll-area
+      class="col"
+      :vertical-thumb-style="{ width: '4px', borderRadius: '4px' }"
+      tabindex="0"
+    >
+      <nav class="q-px-xs" aria-label="Kanály">
+        <template v-if="invites.length"
+          ><h2
+            class="row items-center justify-between text-caption text-weight-medium q-mx-sm q-mt-sm q-mb-xs"
+            :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+          >
+            Pozvánky <span>{{ invites.length }}</span>
+          </h2>
+          <q-card v-for="invite in invites" :key="invite.channel.id" flat bordered class="q-ma-xs">
+            <q-card-section class="row no-wrap items-start q-pa-sm">
+              <q-avatar
+                rounded
+                size="28px"
+                :color="$q.dark.isActive ? 'secondary' : 'green-2'"
+                :text-color="$q.dark.isActive ? 'green-2' : 'teal-10'"
+                ><q-icon name="mail_outline" size="16px"
+              /></q-avatar>
+              <div class="q-ml-sm">
+                <b>{{ invite.channel.name }}</b>
+                <p
+                  class="text-caption q-mt-xs q-mb-none"
+                  :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+                >
+                  @{{ invite.from }} vás pozýva
+                </p>
+              </div>
+            </q-card-section>
+            <q-card-actions align="right" class="q-pt-none">
+              <q-btn
+                unelevated
+                no-caps
+                color="primary"
+                label="Prijať"
+                size="sm"
+                @click="accept(invite.channel.id)"
+              /><q-btn flat no-caps label="Odmietnuť" size="sm" @click="decliningInvite = invite" />
+            </q-card-actions>
+          </q-card>
+        </template>
+        <q-separator v-if="invites.length" class="q-ma-sm q-mt-md" />
+        <div
           class="row items-center justify-between text-caption text-weight-medium q-mx-sm q-mt-sm q-mb-xs"
           :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
         >
-          Pozvánky <span>{{ invites.length }}</span>
-        </h2>
-        <q-card v-for="invite in invites" :key="invite.channel.id" flat bordered class="q-ma-xs">
-          <q-card-section class="row no-wrap items-start q-pa-sm">
-            <q-avatar
-              rounded
-              size="28px"
-              :color="$q.dark.isActive ? 'secondary' : 'green-2'"
-              :text-color="$q.dark.isActive ? 'green-2' : 'teal-10'"
-              ><q-icon name="mail_outline" size="16px"
-            /></q-avatar>
-            <div class="q-ml-sm">
-              <b>{{ invite.channel.name }}</b>
-              <p
-                class="text-caption q-mt-xs q-mb-none"
-                :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-              >
-                @{{ invite.from }} vás pozýva
-              </p>
-            </div>
-          </q-card-section>
-          <q-card-actions align="right" class="q-pt-none">
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
-              label="Prijať"
-              size="sm"
-              @click="accept(invite.channel.id)"
-            /><q-btn flat no-caps label="Odmietnuť" size="sm" @click="decliningInvite = invite" />
-          </q-card-actions>
-        </q-card>
-      </template>
-      <q-separator v-if="invites.length" class="q-ma-sm q-mt-md" />
-      <div
-        class="row items-center justify-between text-caption text-weight-medium q-mx-sm q-mt-sm q-mb-xs"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-      >
-        <h2 class="text-caption text-weight-medium q-ma-none">Vaše kanály</h2>
-        <q-btn flat round dense icon="add" aria-label="Vytvoriť kanál" @click="$emit('create')"
-          ><q-tooltip>Vytvoriť kanál</q-tooltip></q-btn
+          <h2 class="text-caption text-weight-medium q-ma-none">Vaše kanály</h2>
+          <q-btn flat round dense icon="add" aria-label="Vytvoriť kanál" @click="$emit('create')"
+            ><q-tooltip>Vytvoriť kanál</q-tooltip></q-btn
+          >
+        </div>
+        <q-list
+          ><q-item
+            v-for="channel in joined"
+            :key="channel.id"
+            clickable
+            :active="channel.id === store.activeChannelId"
+            :aria-current="channel.id === store.activeChannelId ? 'page' : undefined"
+            :active-class="
+              $q.dark.isActive ? 'text-grey-8 text-weight-bold' : 'text-dark text-weight-bold'
+            "
+            :class="$q.dark.isActive ? 'rounded-borders text-grey-8' : 'rounded-borders'"
+            :style="
+              channel.id === store.activeChannelId
+                ? { backgroundColor: $q.dark.isActive ? '#2e2e2e' : '#e8e8e8' }
+                : undefined
+            "
+            @click="select(channel.id)"
+            ><q-item-section avatar
+              ><q-avatar
+                rounded
+                size="28px"
+                :color="
+                  channel.id === store.activeChannelId
+                    ? $q.dark.isActive
+                      ? 'secondary'
+                      : 'green-2'
+                    : $q.dark.isActive
+                      ? 'grey-9'
+                      : 'grey-3'
+                "
+                :text-color="
+                  channel.id === store.activeChannelId
+                    ? $q.dark.isActive
+                      ? 'green-2'
+                      : 'teal-10'
+                    : $q.dark.isActive
+                      ? 'grey-5'
+                      : 'grey-7'
+                "
+                ><q-icon
+                  :name="channel.isPrivate ? 'lock_outline' : 'tag'"
+                  size="16px" /></q-avatar></q-item-section
+            ><q-item-section :class="$q.dark.isActive ? 'text-grey-1' : undefined">{{
+              channel.name
+            }}</q-item-section
+            ><q-item-section
+              v-if="channel.owner === store.nickname"
+              side
+              :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+              ><q-icon name="verified_user" size="14px"
+                ><q-tooltip>Ste správca</q-tooltip></q-icon
+              ></q-item-section
+            ></q-item
+          ></q-list
         >
-      </div>
-      <q-list
-        ><q-item
-          v-for="channel in joined"
-          :key="channel.id"
-          clickable
-          :active="channel.id === store.activeChannelId"
-          :aria-current="channel.id === store.activeChannelId ? 'page' : undefined"
-          :active-class="
-            $q.dark.isActive ? 'text-grey-8 text-weight-bold' : 'text-dark text-weight-bold'
-          "
-          :class="$q.dark.isActive ? 'rounded-borders text-grey-8' : 'rounded-borders'"
-          :style="
-            channel.id === store.activeChannelId
-              ? { backgroundColor: $q.dark.isActive ? '#2e2e2e' : '#e8e8e8' }
-              : undefined
-          "
-          @click="select(channel.id)"
-          ><q-item-section avatar
-            ><q-avatar
-              rounded
-              size="28px"
-              :color="
-                channel.id === store.activeChannelId
-                  ? $q.dark.isActive
-                    ? 'secondary'
-                    : 'green-2'
-                  : $q.dark.isActive
-                    ? 'grey-9'
-                    : 'grey-3'
-              "
-              :text-color="
-                channel.id === store.activeChannelId
-                  ? $q.dark.isActive
-                    ? 'green-2'
-                    : 'teal-10'
-                  : $q.dark.isActive
-                    ? 'grey-5'
-                    : 'grey-7'
-              "
-              ><q-icon
-                :name="channel.isPrivate ? 'lock_outline' : 'tag'"
-                size="16px" /></q-avatar></q-item-section
-          ><q-item-section :class="$q.dark.isActive ? 'text-grey-1' : undefined">{{
-            channel.name
-          }}</q-item-section
-          ><q-item-section
-            v-if="channel.owner === store.nickname"
-            side
-            :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-            ><q-icon name="verified_user" size="14px"
-              ><q-tooltip>Ste správca</q-tooltip></q-icon
-            ></q-item-section
-          ></q-item
-        ></q-list
-      >
-      <p
-        v-if="!joined.length"
-        class="text-caption q-pa-sm"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-      >
-        {{
-          query
-            ? 'Žiadny kanál nezodpovedá hľadaniu.'
-            : 'Pripojte sa ku kanálu alebo vytvorte vlastný.'
-        }}
-      </p>
-      <q-separator class="q-ma-sm" />
-      <h2
-        class="row items-center justify-between text-caption text-weight-medium q-mx-sm q-mt-sm q-mb-xs"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-      >
-        Objaviť kanály
-      </h2>
-      <q-list
-        ><q-item
-          v-for="channel in discover"
-          :key="channel.id"
-          clickable
-          :class="$q.dark.isActive ? 'text-grey-8' : undefined"
-          @click="requestJoin(channel.id)"
-          ><q-item-section avatar
-            ><q-avatar
-              rounded
-              size="28px"
-              :color="$q.dark.isActive ? 'grey-9' : 'grey-3'"
-              :text-color="$q.dark.isActive ? 'grey-5' : 'grey-7'"
-              ><q-icon name="tag" size="16px" /></q-avatar></q-item-section
-          ><q-item-section :class="$q.dark.isActive ? 'text-grey-1' : undefined">{{
-            channel.name
-          }}</q-item-section
-          ><q-item-section side :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-            ><q-icon name="add" size="18px" /></q-item-section
-          ><q-tooltip>Pripojiť sa ku #{{ channel.name }}</q-tooltip></q-item
-        ></q-list
-      >
-      <p
-        v-if="!discover.length"
-        class="text-caption q-pa-sm"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-      >
-        {{ query ? 'Ďalšie kanály sa nenašli.' : 'Žiadne ďalšie verejné kanály.' }}
-      </p>
-    </nav>
+        <p
+          v-if="!joined.length"
+          class="text-caption q-pa-sm"
+          :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+        >
+          {{
+            query
+              ? 'Žiadny kanál nezodpovedá hľadaniu.'
+              : 'Pripojte sa ku kanálu alebo vytvorte vlastný.'
+          }}
+        </p>
+        <q-separator class="q-ma-sm" />
+        <h2
+          class="row items-center justify-between text-caption text-weight-medium q-mx-sm q-mt-sm q-mb-xs"
+          :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+        >
+          Objaviť kanály
+        </h2>
+        <q-list
+          ><q-item
+            v-for="channel in discover"
+            :key="channel.id"
+            clickable
+            :class="$q.dark.isActive ? 'text-grey-8' : undefined"
+            @click="requestJoin(channel.id)"
+            ><q-item-section avatar
+              ><q-avatar
+                rounded
+                size="28px"
+                :color="$q.dark.isActive ? 'grey-9' : 'grey-3'"
+                :text-color="$q.dark.isActive ? 'grey-5' : 'grey-7'"
+                ><q-icon name="tag" size="16px" /></q-avatar></q-item-section
+            ><q-item-section :class="$q.dark.isActive ? 'text-grey-1' : undefined">{{
+              channel.name
+            }}</q-item-section
+            ><q-item-section side :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+              ><q-icon name="add" size="18px" /></q-item-section
+            ><q-tooltip>Pripojiť sa ku #{{ channel.name }}</q-tooltip></q-item
+          ></q-list
+        >
+        <p
+          v-if="!discover.length"
+          class="text-caption q-pa-sm"
+          :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+        >
+          {{ query ? 'Ďalšie kanály sa nenašli.' : 'Žiadne ďalšie verejné kanály.' }}
+        </p>
+      </nav>
+    </q-scroll-area>
     <div class="q-pa-xs">
       <q-btn
         flat
