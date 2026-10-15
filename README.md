@@ -35,4 +35,22 @@ npm run build
 
 ## Technológie
 
-- Quasar, Vue 3, TypeScript, Pinia
+- Quasar, Vue 3, TypeScript
+
+## Stav prototypu
+
+Zdieľaný stav používa Vue `reactive()` bez ďalšej knižnice. Komponenty ho získajú cez
+`usePrototypeStore()`. Rovnaká inštancia zabezpečuje okamžité aktualizácie celej aplikácie.
+
+- `src/stores/prototype.ts`: reaktívny stav, účty, kanály, príkazy a demo komunikácia.
+- `src/stores/prototype-model.ts`: dátové typy, stavy používateľov a vytváranie záznamov.
+- `src/stores/prototype-demo.ts`: úvodné demo účty, kanály a správy.
+
+Ukladanie používa pôvodné kľúče a formát, takže existujúce demo dáta zostávajú dostupné.
+Testy vytvárajú samostatné inštancie cez `createPrototypeStore()` a po použití ich uvoľnia
+pomocou `dispose()`.
+
+Zachované sú scenáre 1–11 zadania: účty, zoznam a správa kanálov, správy a príkazy,
+verejné/súkromné členstvo a moderovanie, opustenie kanála, adresovanie správ, história,
+notifikácie, online/DND/offline, zoznam členov a živý náhľad písania. Pre prvú fázu ide
+o lokálnu simuláciu; backend, databáza a nasadenie PWA patria do finálnej fázy.

@@ -1,186 +1,29 @@
-import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { effectScope, reactive, watch } from 'vue';
+import { createDemoSnapshot } from './prototype-demo.ts';
+import { makeChannel, makeMessage } from './prototype-model.ts';
+import type {
+  Presence,
+  PrototypeUser,
+  PrototypeChannel,
+  Invitation,
+  Notice,
+  Snapshot,
+} from './prototype-model.ts';
 
-// Frontend-only simulation of the VPWA rules, not authentication or a server.
-// Source: https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md
-export type Presence = 'online' | 'dnd' | 'offline';
-export const presenceLabels: Record<Presence, string> = {
-  online: 'Online',
-  dnd: 'Nerušiť',
-  offline: 'Offline',
-};
-export const presenceColors: Record<Presence, string> = {
-  online: 'green-5',
-  dnd: 'amber-7',
-  offline: 'grey-6',
-};
-export interface PrototypeUser {
-  id: string;
-  fullName: string;
-  nickname: string;
-  email: string;
-}
-export interface PrototypeMessage {
-  id: string;
-  nickname: string;
-  body: string;
-  sentAt: number;
-}
-export interface PrototypeChannel {
-  id: string;
-  name: string;
-  isPrivate: boolean;
-  owner: string;
-  members: string[];
-  messages: PrototypeMessage[];
-  lastActivity: number;
-  banned: string[];
-  votes: Record<string, string[]>;
-}
-interface Invitation {
-  channelId: string;
-  from: string;
-  to: string;
-}
-interface PendingMessage {
-  channelId: string;
-  to: string;
-  message: PrototypeMessage;
-}
-interface Notice {
-  id: string;
-  channelId: string;
-  from: string;
-  body: string;
-  sentAt: number;
-}
-interface Snapshot {
-  users: PrototypeUser[];
-  channels: PrototypeChannel[];
-  invitations: Invitation[];
-  statuses: Record<string, Presence>;
-  directOnly: Record<string, boolean>;
-  pending: PendingMessage[];
-  activeId: string;
-}
+export { demoUsers } from './prototype-demo.ts';
+export { presenceLabels, presenceColors } from './prototype-model.ts';
+export type {
+  Presence,
+  PrototypeUser,
+  PrototypeMessage,
+  PrototypeChannel,
+} from './prototype-model.ts';
 
+// Frontend simulation for phase 1; authentication and networking belong to the backend.
+// Requirements: https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md
+// Vue shared state: https://vuejs.org/guide/scaling-up/state-management.html#simple-state-management-with-reactivity-api
 const storageKey = 'convo-prototype-v2';
 const sessionKey = 'convo-prototype-session';
-export const demoUsers: PrototypeUser[] = [
-  { id: 'alex', fullName: 'Alex Kováč', nickname: 'alex', email: 'alex@convo.app' },
-  { id: 'mira', fullName: 'Mira Novotná', nickname: 'mira', email: 'mira@convo.app' },
-  { id: 'jules', fullName: 'Júlia Šimková', nickname: 'jules', email: 'jules@convo.app' },
-  { id: 'nina', fullName: 'Nina Poláková', nickname: 'nina', email: 'nina@convo.app' },
-];
-const conversation = [
-  ['mira', 'Ahojte, návrh rozhrania je pripravený na spoločné prejdenie.'],
-  ['jules', 'Pozrela som mobilnú verziu. Zoznam kanálov by som nechala v bočnom paneli.'],
-  ['alex', 'Súhlasím. Správy tak budú mať viac miesta.'],
-  ['nina', 'K registrácii som doplnila chybové stavy a potvrdenie hesla.'],
-  ['mira', 'V súkromných kanáloch ešte skontrolujme oprávnenia správcu.'],
-  ['alex', 'Doplním aj dialóg pred zrušením kanála.'],
-  ['jules', 'História by mala pri načítaní starších správ zostať na rovnakom mieste.'],
-  ['nina', 'Vyskúšala som to na telefóne. Pole na správu zostáva dostupné.'],
-  ['mira', 'Zajtra môžeme prejsť scenáre k odovzdaniu.'],
-  ['alex', 'Pripravím zoznam príkazov priamo v aplikácii.'],
-  ['jules', 'Na prezentácii ukážme aj rozdiel medzi DND a offline.'],
-  ['nina', 'A pozvánku do súkromného kanála, tú sa oplatí predviesť.'],
-  ['alex', 'Dnes sa sústreďme na posledné detaily prototypu.'],
-  ['mira', 'Zjednotila som medzery a veľkosti textu. Na mobile sa to číta oveľa lepšie.'],
-  ['jules', 'Dátový model prejdem poobede. Máme tam aj hlasy na vyradenie člena?'],
-  ['nina', 'Áno, tri hlasy od rôznych členov. Správca môže prístup odobrať hneď.'],
-  ['mira', '@alex pozrieš ešte klávesnicu a odosielanie cez Enter?'],
-  ['alex', 'Jasné. Shift + Enter nechám na nový riadok.'],
-  ['jules', 'Pridala som pripomienky do kanála design-team.'],
-  ['nina', 'Poďme to zajtra skúsiť celé, od registrácie po poslednú správu.'],
-  ['mira', 'Dohodnuté. Stretneme sa o 10:00 v škole?'],
-  ['jules', 'Za mňa platí, donesiem aj poznámky z cvičenia.'],
-  ['nina', '@alex keď budeš mať hotové príkazy, napíš sem. Prejdem ich s tebou.'],
-  ['mira', 'Zatiaľ ďakujem všetkým. Máme to pekne rozdelené.'],
-];
-
-function seed(): Snapshot {
-  const now = Date.now();
-  const channels: PrototypeChannel[] = [
-    {
-      id: 'c-general',
-      name: 'general',
-      isPrivate: false,
-      owner: 'alex',
-      members: ['alex', 'mira', 'jules', 'nina'],
-      messages: conversation.map(([nickname, body], i) => ({
-        id: `seed-${i}`,
-        nickname: nickname ?? 'mira',
-        body: body ?? '',
-        sentAt: now - (conversation.length - i) * 8 * 60_000,
-      })),
-      lastActivity: now,
-      banned: [],
-      votes: {},
-    },
-    {
-      id: 'c-design',
-      name: 'design-team',
-      isPrivate: true,
-      owner: 'mira',
-      members: ['alex', 'mira', 'jules'],
-      messages: [
-        {
-          id: 'design-1',
-          nickname: 'mira',
-          body: 'Sem posielajte pripomienky k rozhraniu. Stačí napísať obrazovku a čo by ste zmenili.',
-          sentAt: now - 3_600_000,
-        },
-      ],
-      lastActivity: now,
-      banned: [],
-      votes: {},
-    },
-    {
-      id: 'c-launch',
-      name: 'launch-week',
-      isPrivate: true,
-      owner: 'jules',
-      members: ['jules', 'nina'],
-      messages: [],
-      lastActivity: now,
-      banned: [],
-      votes: {},
-    },
-    {
-      id: 'c-openlab',
-      name: 'open-lab',
-      isPrivate: false,
-      owner: 'nina',
-      members: ['nina', 'mira', 'jules'],
-      messages: [],
-      lastActivity: now,
-      banned: [],
-      votes: {},
-    },
-    {
-      id: 'c-coffee',
-      name: 'coffee-break',
-      isPrivate: false,
-      owner: 'mira',
-      members: ['mira'],
-      messages: [],
-      lastActivity: now,
-      banned: [],
-      votes: {},
-    },
-  ];
-  return {
-    users: demoUsers.map((account) => ({ ...account })),
-    channels,
-    invitations: [{ channelId: 'c-launch', from: 'jules', to: 'alex' }],
-    statuses: { alex: 'online', mira: 'online', jules: 'dnd', nina: 'offline' },
-    directOnly: {},
-    pending: [],
-    activeId: 'c-general',
-  };
-}
-
 function readSnapshot(): Snapshot {
   try {
     const raw = localStorage.getItem(storageKey);
@@ -199,7 +42,7 @@ function readSnapshot(): Snapshot {
   } catch {
     /* Storage can be unavailable; the prototype still works in memory. */
   }
-  return seed();
+  return createDemoSnapshot();
 }
 export function mentions(body: string, nickname: string) {
   return (body.match(/@[a-zA-Z][a-zA-Z0-9_]*/g) ?? []).some(
@@ -207,81 +50,99 @@ export function mentions(body: string, nickname: string) {
   );
 }
 
-export const usePrototypeStore = defineStore('prototype', () => {
-  const data = ref(readSnapshot());
-  const session = ref('');
+export function createPrototypeStore() {
+  let sessionId = '';
   try {
-    session.value = sessionStorage.getItem(sessionKey) ?? '';
+    sessionId = sessionStorage.getItem(sessionKey) ?? '';
   } catch {
-    /* memory only */
+    // The demo also works without browser storage.
   }
-  const user = computed(() => data.value.users.find((item) => item.id === session.value) ?? null);
-  const nickname = computed(() => user.value?.nickname ?? '');
-  const channels = computed(() => data.value.channels);
-  const joinedChannels = computed(() =>
-    channels.value.filter((c) => c.members.includes(nickname.value)),
-  );
-  const activeChannelId = computed({
-    get: () => data.value.activeId,
-    set: (id: string) => {
-      data.value.activeId = id;
+  const drafts: Record<string, string> = {};
+  const state = reactive({
+    data: readSnapshot(),
+    sessionId,
+    notices: [] as Notice[],
+    feedback: '',
+    storageWarning: '',
+    typing: null as { channelId: string; nickname: string; body: string } | null,
+    drafts,
+    get user(): PrototypeUser | null {
+      return state.data.users.find((user) => user.id === state.sessionId) ?? null;
+    },
+    get nickname(): string {
+      return state.user?.nickname ?? '';
+    },
+    get channels(): PrototypeChannel[] {
+      return state.data.channels;
+    },
+    get joinedChannels(): PrototypeChannel[] {
+      return state.channels.filter((channel) => channel.members.includes(state.nickname));
+    },
+    get activeChannelId(): string {
+      return state.data.activeId;
+    },
+    set activeChannelId(id: string) {
+      state.data.activeId = id;
+    },
+    get activeChannel(): PrototypeChannel | undefined {
+      return state.joinedChannels.find((channel) => channel.id === state.activeChannelId);
+    },
+    get invitations(): Invitation[] {
+      return state.data.invitations.filter((invite) => invite.to === state.nickname);
+    },
+    get status(): Presence {
+      return state.data.statuses[state.nickname] ?? 'online';
+    },
+    get directOnly(): boolean {
+      return state.data.directOnly[state.nickname] ?? false;
+    },
+    set directOnly(value: boolean) {
+      state.data.directOnly[state.nickname] = value;
     },
   });
-  const activeChannel = computed(() =>
-    joinedChannels.value.find((c) => c.id === activeChannelId.value),
-  );
-  const invitations = computed(() => data.value.invitations.filter((i) => i.to === nickname.value));
-  const status = computed(() => data.value.statuses[nickname.value] ?? 'online');
-  const directOnly = computed({
-    get: () => data.value.directOnly[nickname.value] ?? false,
-    set: (value: boolean) => {
-      data.value.directOnly[nickname.value] = value;
-    },
-  });
-  const notices = ref<Notice[]>([]);
-  const feedback = ref('');
-  const storageWarning = ref('');
-  const typing = ref<{ channelId: string; nickname: string; body: string } | null>(null);
-  const drafts = ref<Record<string, string>>({});
 
-  watch(
-    data,
-    () => {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(data.value));
-      } catch {
-        storageWarning.value = 'Zmeny zostávajú iba v pamäti. Prehliadač ich nedokáže uložiť.';
-      }
-    },
-    { deep: true },
+  // The shared store survives page unmounts; tests can dispose their own instance.
+  const scope = effectScope(true);
+  scope.run(() =>
+    watch(
+      () => state.data,
+      () => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state.data));
+        } catch {
+          state.storageWarning = 'Zmeny zostávajú iba v pamäti. Prehliadač ich nedokáže uložiť.';
+        }
+      },
+      { deep: true },
+    ),
   );
 
   function selectChannel(id: string) {
-    activeChannelId.value = id;
-    typing.value = null;
+    state.activeChannelId = id;
+    state.typing = null;
   }
   function requireUser() {
-    if (!user.value) throw new Error('Najprv sa prihláste.');
-    return nickname.value;
+    if (!state.user) throw new Error('Najprv sa prihláste.');
+    return state.nickname;
   }
-  function requireChannel(id = activeChannelId.value) {
+  function requireChannel(id = state.activeChannelId) {
     const actor = requireUser();
-    const channel = channels.value.find((c) => c.id === id && c.members.includes(actor));
+    const channel = state.channels.find((c) => c.id === id && c.members.includes(actor));
     if (!channel) throw new Error('Najprv sa pripojte ku kanálu.');
     return channel;
   }
   function repairSelection() {
-    if (!activeChannel.value) activeChannelId.value = joinedChannels.value[0]?.id ?? '';
+    if (!state.activeChannel) state.activeChannelId = state.joinedChannels[0]?.id ?? '';
   }
   function removeChannel(id: string) {
-    data.value.channels = channels.value.filter((c) => c.id !== id);
-    data.value.invitations = data.value.invitations.filter((i) => i.channelId !== id);
-    data.value.pending = data.value.pending.filter((p) => p.channelId !== id);
-    typing.value = null;
+    state.data.channels = state.channels.filter((c) => c.id !== id);
+    state.data.invitations = state.data.invitations.filter((i) => i.channelId !== id);
+    state.data.pending = state.data.pending.filter((p) => p.channelId !== id);
+    state.typing = null;
     repairSelection();
   }
   function expireInactiveChannels() {
-    channels.value
+    state.channels
       .filter((c) => c.lastActivity < Date.now() - 30 * 86400_000)
       .forEach((c) => removeChannel(c.id));
   }
@@ -291,27 +152,17 @@ export const usePrototypeStore = defineStore('prototype', () => {
     const clean = name.trim().replace(/^#/, '').toLowerCase();
     if (!/^[a-z][a-z0-9_-]{2,63}$/.test(clean))
       throw new Error('Názov musí mať 3 až 64 znakov, začínať písmenom a neobsahovať medzery.');
-    if (channels.value.some((c) => c.name.toLowerCase() === clean))
+    if (state.channels.some((c) => c.name.toLowerCase() === clean))
       throw new Error('Tento názov kanála je už obsadený.');
-    const channel: PrototypeChannel = {
-      id: crypto.randomUUID(),
-      name: clean,
-      isPrivate,
-      owner: actor,
-      members: [actor],
-      messages: [],
-      lastActivity: Date.now(),
-      banned: [],
-      votes: {},
-    };
-    data.value.channels.push(channel);
+    const channel = makeChannel(clean, actor, isPrivate);
+    state.data.channels.push(channel);
     selectChannel(channel.id);
     return channel;
   }
   function joinPublic(id: string) {
     const actor = requireUser();
     expireInactiveChannels();
-    const channel = channels.value.find((c) => c.id === id);
+    const channel = state.channels.find((c) => c.id === id);
     if (!channel) throw new Error('Kanál už neexistuje.');
     if (channel.banned.includes(actor))
       throw new Error('Máte zakázaný prístup. Obnoviť ho môže správca pozvánkou.');
@@ -321,125 +172,115 @@ export const usePrototypeStore = defineStore('prototype', () => {
     }
     selectChannel(id);
   }
-  function inviteMember(target: string, id = activeChannelId.value) {
+  function inviteMember(target: string, id = state.activeChannelId) {
     const channel = requireChannel(id);
     const to = target.replace(/^@/, '').trim().toLowerCase();
-    if (!data.value.users.some((u) => u.nickname === to))
+    if (!state.data.users.some((u) => u.nickname === to))
       throw new Error('Používateľ s touto prezývkou neexistuje.');
-    if (channel.isPrivate && channel.owner !== nickname.value)
+    if (channel.isPrivate && channel.owner !== state.nickname)
       throw new Error('Pozývať môže iba správca súkromného kanála.');
     if (channel.members.includes(to)) throw new Error('Používateľ už je členom kanála.');
     if (channel.banned.includes(to)) {
-      if (channel.owner !== nickname.value) throw new Error('Ban môže zrušiť iba správca.');
+      if (channel.owner !== state.nickname) throw new Error('Ban môže zrušiť iba správca.');
       channel.banned = channel.banned.filter((n) => n !== to);
       delete channel.votes[to];
     }
-    if (data.value.invitations.some((i) => i.channelId === id && i.to === to))
+    if (state.data.invitations.some((i) => i.channelId === id && i.to === to))
       throw new Error('Pozvánka už čaká na prijatie.');
-    data.value.invitations.push({ channelId: id, from: nickname.value, to });
-    feedback.value = `Pozvánka pre @${to} je pripravená.`;
+    state.data.invitations.push({ channelId: id, from: state.nickname, to });
+    state.feedback = `Pozvánka pre @${to} je pripravená.`;
   }
   function acceptInvitation(id: string) {
     expireInactiveChannels();
-    const invite = invitations.value.find((i) => i.channelId === id);
-    const channel = channels.value.find((c) => c.id === id);
-    if (!invite || !channel || channel.banned.includes(nickname.value))
+    const invite = state.invitations.find((i) => i.channelId === id);
+    const channel = state.channels.find((c) => c.id === id);
+    if (!invite || !channel || channel.banned.includes(state.nickname))
       throw new Error('Pozvánka už nie je platná.');
-    if (!channel.members.includes(nickname.value)) channel.members.push(nickname.value);
+    if (!channel.members.includes(state.nickname)) channel.members.push(state.nickname);
     declineInvitation(id);
     selectChannel(id);
   }
   function declineInvitation(id: string) {
-    data.value.invitations = data.value.invitations.filter(
-      (i) => i.channelId !== id || i.to !== nickname.value,
+    state.data.invitations = state.data.invitations.filter(
+      (i) => i.channelId !== id || i.to !== state.nickname,
     );
   }
   function leaveChannel(id: string) {
     const channel = requireChannel(id);
-    if (channel.owner === nickname.value) removeChannel(id);
+    if (channel.owner === state.nickname) removeChannel(id);
     else {
-      channel.members = channel.members.filter((n) => n !== nickname.value);
+      channel.members = channel.members.filter((n) => n !== state.nickname);
       repairSelection();
     }
   }
   function moderate(target: string, kind: 'kick' | 'revoke') {
     const channel = requireChannel();
     const to = target.replace(/^@/, '').toLowerCase();
-    if (to === nickname.value) throw new Error('Na opustenie kanála použite /cancel.');
+    if (to === state.nickname) throw new Error('Na opustenie kanála použite /cancel.');
     if (to === channel.owner) throw new Error('Správcu kanála nie je možné vyradiť.');
-    if (kind === 'revoke' && (!channel.isPrivate || channel.owner !== nickname.value))
+    if (kind === 'revoke' && (!channel.isPrivate || channel.owner !== state.nickname))
       throw new Error('/revoke môže použiť iba správca súkromného kanála.');
     if (kind === 'kick' && channel.isPrivate)
       throw new Error('V súkromnom kanáli použite /revoke.');
     if (!channel.members.includes(to)) {
       if (
         kind === 'revoke' &&
-        data.value.invitations.some((i) => i.channelId === channel.id && i.to === to)
+        state.data.invitations.some((i) => i.channelId === channel.id && i.to === to)
       ) {
-        data.value.invitations = data.value.invitations.filter(
+        state.data.invitations = state.data.invitations.filter(
           (i) => i.channelId !== channel.id || i.to !== to,
         );
-        feedback.value = `Pozvánka pre @${to} bola odobratá.`;
+        state.feedback = `Pozvánka pre @${to} bola odobratá.`;
         return;
       }
       throw new Error('Používateľ nie je členom tohto kanála.');
     }
-    if (kind === 'kick' && channel.owner !== nickname.value) {
+    if (kind === 'kick' && channel.owner !== state.nickname) {
       const votes = channel.votes[to] ?? [];
-      if (votes.includes(nickname.value))
+      if (votes.includes(state.nickname))
         throw new Error('Za vyradenie tohto člena ste už hlasovali.');
-      channel.votes[to] = [...votes, nickname.value];
+      channel.votes[to] = [...votes, state.nickname];
       if (channel.votes[to].length < 3) {
-        feedback.value = `Hlas uložený: ${channel.votes[to].length} z 3 pre @${to}.`;
+        state.feedback = `Hlas uložený: ${channel.votes[to].length} z 3 pre @${to}.`;
         return;
       }
     }
     channel.members = channel.members.filter((n) => n !== to);
     if (kind === 'kick') channel.banned.push(to);
-    data.value.invitations = data.value.invitations.filter(
+    state.data.invitations = state.data.invitations.filter(
       (i) => i.channelId !== channel.id || i.to !== to,
     );
-    if (typing.value?.nickname === to) typing.value = null;
-    feedback.value =
+    if (state.typing?.nickname === to) state.typing = null;
+    state.feedback =
       kind === 'kick' ? `@${to} má zakázaný prístup do kanála.` : `Členstvo @${to} bolo odobraté.`;
   }
   function sendMessage(body: string) {
     const channel = requireChannel();
-    if (status.value === 'offline') throw new Error('Na odoslanie správy sa prepnite online.');
+    if (state.status === 'offline') throw new Error('Na odoslanie správy sa prepnite online.');
     const clean = body.trim();
     if (!clean) return;
-    if (clean.length > 4000) throw new Error('Správa môže mať najviac 4 000 znakov.');
-    channel.messages.push({
-      id: crypto.randomUUID(),
-      nickname: nickname.value,
-      body: clean,
-      sentAt: Date.now(),
-    });
-    channel.lastActivity = Date.now();
-    drafts.value[channel.id] = '';
+    const message = makeMessage(state.nickname, clean);
+    channel.messages.push(message);
+    channel.lastActivity = message.sentAt;
+    state.drafts[channel.id] = '';
   }
   function receiveDemoMessage(from: string, body: string, visible: boolean) {
     const channel = requireChannel();
-    if (!channel.members.includes(from) || from === nickname.value)
+    if (!channel.members.includes(from) || from === state.nickname)
       throw new Error('Vyberte iného člena kanála.');
     if (!body.trim()) throw new Error('Zadajte text ukážkovej správy.');
-    const message = {
-      id: crypto.randomUUID(),
-      nickname: from,
-      body: body.trim(),
-      sentAt: Date.now(),
-    };
+    const message = makeMessage(from, body);
     channel.lastActivity = message.sentAt;
-    if (status.value === 'offline') {
-      data.value.pending.push({ channelId: channel.id, to: nickname.value, message });
+    if (state.status === 'offline') {
+      state.data.pending.push({ channelId: channel.id, to: state.nickname, message });
       return 'Správa čaká na návrat online.';
     }
     channel.messages.push(message);
     if (visible) return 'Správa doručená. Viditeľná aplikácia nevystavuje notifikáciu.';
-    if (status.value === 'dnd') return 'Správa doručená. DND potlačil notifikáciu.';
-    if (directOnly.value && !mentions(body, nickname.value))
+    if (state.status === 'dnd') return 'Správa doručená. DND potlačil notifikáciu.';
+    if (state.directOnly && !mentions(body, state.nickname))
       return 'Správa doručená. Filter potlačil neadresovanú notifikáciu.';
-    notices.value.unshift({
+    state.notices.unshift({
       id: message.id,
       channelId: channel.id,
       from,
@@ -450,26 +291,26 @@ export const usePrototypeStore = defineStore('prototype', () => {
   }
   function setStatus(value: Presence) {
     requireUser();
-    data.value.statuses[nickname.value] = value;
-    if (value === 'offline') typing.value = null;
+    state.data.statuses[state.nickname] = value;
+    if (value === 'offline') state.typing = null;
     if (value !== 'offline') {
-      const waiting = data.value.pending.filter((p) => p.to === nickname.value);
+      const waiting = state.data.pending.filter((p) => p.to === state.nickname);
       waiting.forEach((p) => {
-        const c = joinedChannels.value.find((c) => c.id === p.channelId);
+        const c = state.joinedChannels.find((c) => c.id === p.channelId);
         if (c) c.messages.push(p.message);
       });
-      data.value.pending = data.value.pending.filter((p) => p.to !== nickname.value);
+      state.data.pending = state.data.pending.filter((p) => p.to !== state.nickname);
       if (waiting.length)
-        feedback.value = `Kanály aktualizované. Doručené správy: ${waiting.length}.`;
+        state.feedback = `Kanály aktualizované. Doručené správy: ${waiting.length}.`;
     }
   }
   function setDemoDraft(from: string, body: string) {
     const channel = requireChannel();
-    if (status.value === 'offline' || !channel.members.includes(from) || from === nickname.value) {
-      typing.value = null;
+    if (state.status === 'offline' || !channel.members.includes(from) || from === state.nickname) {
+      state.typing = null;
       return;
     }
-    typing.value = body ? { channelId: channel.id, nickname: from, body } : null;
+    state.typing = body ? { channelId: channel.id, nickname: from, body } : null;
   }
   function processChannelCommand(command: string): 'members' | 'leave' | 'destroy' | 'done' {
     const [name, argument, modifier, extra] = command.trim().split(/\s+/);
@@ -478,7 +319,7 @@ export const usePrototypeStore = defineStore('prototype', () => {
         throw new Error('Použite /join názov [private].');
       expireInactiveChannels();
       const clean = argument.replace(/^#/, '').toLowerCase();
-      const existing = channels.value.find((c) => c.name.toLowerCase() === clean);
+      const existing = state.channels.find((c) => c.name.toLowerCase() === clean);
       if (existing) {
         if (modifier) throw new Error('Názov kanála už existuje.');
         joinPublic(existing.id);
@@ -489,7 +330,7 @@ export const usePrototypeStore = defineStore('prototype', () => {
     if (['/list', '/cancel', '/quit'].includes(name ?? '')) {
       if (argument) throw new Error('Tento príkaz nemá argumenty.');
       if (name === '/list') return 'members';
-      if (name === '/quit' && channel.owner !== nickname.value)
+      if (name === '/quit' && channel.owner !== state.nickname)
         throw new Error('Kanál môže zrušiť iba správca.');
       return name === '/quit' ? 'destroy' : 'leave';
     }
@@ -501,24 +342,28 @@ export const usePrototypeStore = defineStore('prototype', () => {
     else throw new Error('Neznámy príkaz. Otvorte prehľad príkazov pod poľom správy.');
     return 'done';
   }
-  function activate(account: PrototypeUser) {
-    session.value = account.id;
+  function resetSession(account: PrototypeUser | null) {
+    state.sessionId = account?.id ?? '';
+    state.typing = null;
+    state.notices = [];
+    state.drafts = {};
+    state.feedback = '';
     try {
-      sessionStorage.setItem(sessionKey, account.id);
+      if (account) sessionStorage.setItem(sessionKey, account.id);
+      else sessionStorage.removeItem(sessionKey);
     } catch {
-      /* memory only */
+      // Signing in and out still works in memory when storage is unavailable.
     }
-    typing.value = null;
-    notices.value = [];
-    drafts.value = {};
-    feedback.value = '';
+  }
+  function activate(account: PrototypeUser) {
+    resetSession(account);
     expireInactiveChannels();
     repairSelection();
-    setStatus(data.value.statuses[account.nickname] ?? 'online');
+    setStatus(state.data.statuses[account.nickname] ?? 'online');
   }
   function signIn(email: string, password: string) {
     if (password.length < 8) throw new Error('Pre prototyp zadajte aspoň 8 znakov hesla.');
-    const account = data.value.users.find(
+    const account = state.data.users.find(
       (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
     );
     if (!account) throw new Error('Účet neexistuje. Zaregistrujte sa alebo použite demo účet.');
@@ -537,7 +382,7 @@ export const usePrototypeStore = defineStore('prototype', () => {
       throw new Error('Prezývka musí mať 3 až 32 znakov a začínať písmenom.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) throw new Error('Zadajte platný e-mail.');
     if (
-      data.value.users.some(
+      state.data.users.some(
         (u) =>
           u.nickname === input.nickname.toLowerCase() ||
           u.email.toLowerCase() === input.email.toLowerCase(),
@@ -553,36 +398,13 @@ export const usePrototypeStore = defineStore('prototype', () => {
       email: input.email.trim(),
     };
     // Deliberately never persist passwords in a frontend prototype.
-    data.value.users.push(account);
+    state.data.users.push(account);
     activate(account);
   }
   function signOut() {
-    session.value = '';
-    typing.value = null;
-    drafts.value = {};
-    notices.value = [];
-    try {
-      sessionStorage.removeItem(sessionKey);
-    } catch {
-      /* memory only */
-    }
+    resetSession(null);
   }
-  return {
-    data,
-    user,
-    nickname,
-    channels,
-    joinedChannels,
-    activeChannelId,
-    activeChannel,
-    invitations,
-    status,
-    directOnly,
-    notices,
-    feedback,
-    storageWarning,
-    typing,
-    drafts,
+  return Object.assign(state, {
     selectChannel,
     createChannel,
     joinPublic,
@@ -601,5 +423,11 @@ export const usePrototypeStore = defineStore('prototype', () => {
     signUp,
     signOut,
     activate,
-  };
-});
+    dispose: () => scope.stop(),
+  });
+}
+
+let prototype: ReturnType<typeof createPrototypeStore> | undefined;
+export function usePrototypeStore() {
+  return (prototype ??= createPrototypeStore());
+}
