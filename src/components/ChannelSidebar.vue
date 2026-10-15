@@ -94,14 +94,11 @@
             :active="channel.id === store.activeChannelId"
             :aria-current="channel.id === store.activeChannelId ? 'page' : undefined"
             :active-class="
-              $q.dark.isActive ? 'text-grey-8 text-weight-bold' : 'text-dark text-weight-bold'
+              $q.dark.isActive
+                ? 'bg-grey-9 text-grey-1 text-weight-bold'
+                : 'bg-grey-3 text-dark text-weight-bold'
             "
             :class="$q.dark.isActive ? 'rounded-borders text-grey-8' : 'rounded-borders'"
-            :style="
-              channel.id === store.activeChannelId
-                ? { backgroundColor: $q.dark.isActive ? '#2e2e2e' : '#e8e8e8' }
-                : undefined
-            "
             @click="select(channel.id)"
             ><q-item-section avatar
               ><q-avatar

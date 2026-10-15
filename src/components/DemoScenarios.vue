@@ -123,13 +123,14 @@
 </template>
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { useQuasar } from 'quasar';
+import { useInterval, useQuasar } from 'quasar';
 import ConfirmationDialog from './ConfirmationDialog.vue';
 import { usePrototypeStore } from '@/stores/prototype';
 defineProps<{ modelValue: boolean }>();
 defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const store = usePrototypeStore();
 const $q = useQuasar();
+const { registerInterval, removeInterval } = useInterval();
 const sender = ref('');
 const body = ref(`@${store.nickname} pozrieš sa na môj návrh?`);
 const simulateHidden = ref(false);
@@ -177,9 +178,8 @@ function receive() {
     result.value = e instanceof Error ? e.message : 'Správu sa nepodarilo doručiť.';
   }
 }
-let timer: ReturnType<typeof setInterval> | undefined;
 function stopTyping() {
-  clearInterval(timer);
+  removeInterval();
   playing.value = false;
   store.typing = null;
 }
@@ -192,11 +192,11 @@ function playTyping() {
   let index = 0;
   playing.value = true;
   // Deliberately paced demo participant; no timers on the actual input path.
-  timer = setInterval(() => {
+  registerInterval(() => {
     index += 1;
     store.setDemoDraft(sender.value, text.slice(0, index));
     if (index >= text.length) {
-      clearInterval(timer);
+      removeInterval();
       playing.value = false;
     }
   }, 160);
