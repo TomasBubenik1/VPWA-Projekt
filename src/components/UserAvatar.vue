@@ -1,7 +1,8 @@
 <template>
   <q-avatar
     rounded
-    size="36px"
+    :size="size"
+    :font-size="fontSize"
     :color="$q.dark.isActive ? 'secondary' : 'green-2'"
     :text-color="$q.dark.isActive ? 'grey-1' : 'teal-10'"
     aria-hidden="true"
@@ -15,7 +16,14 @@ import { computed } from 'vue';
 import { usePrototypeStore } from '@/stores/prototype';
 
 // One place for initials, used by the sidebar, history and member list.
-const props = defineProps<{ nickname: string }>();
+const props = withDefaults(
+  defineProps<{
+    nickname: string;
+    size?: string;
+    fontSize?: string;
+  }>(),
+  { size: '36px' },
+);
 const store = usePrototypeStore();
 
 const fullName = computed(

@@ -7,9 +7,23 @@
     :horizontal-offset="[0, 5]"
     tabindex="0"
     aria-label="História správ"
+    @scroll="trackPosition"
   >
-    <div class="column no-wrap q-px-md q-pt-sm q-pb-xl">
-      <div ref="topSentinel" aria-hidden="true" />
+    <q-infinite-scroll
+      :key="channel.id"
+      ref="infiniteScroll"
+      reverse
+      :offset="160"
+      :scroll-target="scroller"
+      :disable="!hasOlder"
+      class="column no-wrap q-px-md q-pt-sm q-pb-xl"
+      @load="loadOlder"
+    >
+      <template #loading>
+        <div class="row flex-center q-py-sm" role="status" aria-label="Načítavam staršie správy">
+          <q-spinner-dots color="primary" size="24px" />
+        </div>
+      </template>
       <q-btn
         v-if="hasOlder"
         flat
@@ -17,7 +31,7 @@
         color="primary"
         class="self-center q-my-sm"
         label="Načítať staršie správy"
-        @click="loadOlder"
+        @click="infiniteScroll?.trigger()"
       />
       <div
         v-else
@@ -37,50 +51,9 @@
           <span>{{ day(message.sentAt) }}</span>
           <q-separator class="col" />
         </div>
-        <q-chat-message
-          :sent="message.nickname === store.nickname"
-          :bg-color="bubbleColor(message)"
-          :text-color="bubbleTextColor(message)"
-          :aria-label="`Správa od ${name(message.nickname)}`"
-          class="q-mb-lg"
-        >
-          <template v-if="message.nickname !== store.nickname" #avatar>
-            <UserAvatar :nickname="message.nickname" class="self-end q-mr-md" />
-          </template>
-          <div>
-            <header class="row items-center">
-              <b v-if="message.nickname !== store.nickname" class="q-mr-sm">{{
-                name(message.nickname)
-              }}</b>
-              <time
-                class="text-caption q-mr-sm"
-                :class="timestampClass(message)"
-                :datetime="new Date(message.sentAt).toISOString()"
-              >
-                {{ time(message.sentAt) }}
-              </time>
-              <span
-                v-if="message.nickname !== store.nickname && mentions(message.body, store.nickname)"
-                class="text-caption"
-                :class="isDark ? 'text-green-2' : 'text-teal-10'"
-              >
-                <q-icon name="alternate_email" size="13px" />pre vás
-              </span>
-            </header>
-            <p class="q-mt-xs q-mb-none">
-              <template v-for="(part, partIndex) in splitMentions(message.body)" :key="partIndex"
-                ><br v-if="part === '\n'" /><span
-                  v-else-if="part.startsWith('@')"
-                  :class="mentionClass(message)"
-                  >{{ part }}</span
-                ><template v-else>{{ part }}</template></template
-              >
-            </p>
-          </div>
-        </q-chat-message>
+        <ChatMessage :message="message" />
       </template>
-      <div ref="bottomSentinel" aria-hidden="true" />
-    </div>
+    </q-infinite-scroll>
     <q-page-sticky v-if="newBelow" position="bottom" :offset="[0, 12]">
       <q-btn
         unelevated
@@ -95,26 +68,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useQuasar, type QScrollArea } from 'quasar';
-import UserAvatar from './UserAvatar.vue';
-import { mentions, usePrototypeStore } from '@/stores/prototype';
-import type { PrototypeChannel, PrototypeMessage } from '@/stores/prototype';
+import { computed, nextTick, ref, watch } from 'vue';
+import { useQuasar, type QInfiniteScroll, type QScrollArea } from 'quasar';
+import ChatMessage from './ChatMessage.vue';
+import { usePrototypeStore } from '@/stores/prototype';
+import type { PrototypeChannel } from '@/stores/prototype';
 
-// Bubbles use Quasar QChatMessage: https://quasar.dev/vue-components/chat/
-// Use case 7: history is rendered by pages of 12 messages. Older pages load when the top
-// of the list scrolls into view. IntersectionObserver reports only that change, so no
-// work runs on every scroll event.
-// Source: https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
+// QInfiniteScroll reverse loads older pages and preserves the reader's scroll position.
 const pageSize = 12;
 const props = defineProps<{ channel: PrototypeChannel }>();
 const store = usePrototypeStore();
 const $q = useQuasar();
 const isDark = computed(() => $q.dark.isActive);
 const scrollArea = ref<QScrollArea>();
+const infiniteScroll = ref<QInfiniteScroll>();
 const scroller = computed(() => scrollArea.value?.getScrollTarget());
-const topSentinel = ref<HTMLElement>();
-const bottomSentinel = ref<HTMLElement>();
 const visibleCount = ref(pageSize);
 const newBelow = ref(false);
 const atBottom = ref(true);
@@ -123,75 +91,36 @@ const sorted = computed(() => [...props.channel.messages].sort((a, b) => a.sentA
 const visible = computed(() => sorted.value.slice(-visibleCount.value));
 const hasOlder = computed(() => visibleCount.value < sorted.value.length);
 
-const time = (value: number) =>
-  new Intl.DateTimeFormat('sk', { hour: '2-digit', minute: '2-digit' }).format(value);
 const day = (value: number) =>
   new Intl.DateTimeFormat('sk', { day: 'numeric', month: 'long' }).format(value);
-const name = (nick: string) => store.data.users.find((u) => u.nickname === nick)?.fullName ?? nick;
-const splitMentions = (body: string) => body.split(/(@[a-zA-Z][a-zA-Z0-9_]*|\n)/g);
-function bubbleColor(message: PrototypeMessage) {
-  if (message.nickname === store.nickname) return isDark.value ? 'teal-10' : 'primary';
-  if (mentions(message.body, store.nickname)) return isDark.value ? 'secondary' : 'green-2';
-  return isDark.value ? 'grey-9' : 'grey-4';
-}
-function bubbleTextColor(message: PrototypeMessage) {
-  if (message.nickname === store.nickname) return 'white';
-  return isDark.value ? 'grey-1' : 'grey-10';
-}
-function timestampClass(message: PrototypeMessage) {
-  if (message.nickname === store.nickname) return 'text-white';
-  if (isDark.value && mentions(message.body, store.nickname)) return 'text-grey-2';
-  return isDark.value ? 'text-grey-4' : 'text-grey-9';
-}
-function mentionClass(message: PrototypeMessage) {
-  if (message.nickname === store.nickname) return 'text-white';
-  return isDark.value ? 'text-green-2 text-weight-medium' : 'text-teal-10';
-}
 
 async function toBottom() {
   await nextTick();
-  if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight;
+  scrollArea.value?.setScrollPosition('vertical', scroller.value?.scrollHeight ?? 0);
+  atBottom.value = true;
   newBelow.value = false;
 }
-let loading = false;
-async function loadOlder() {
-  if (loading || !hasOlder.value) return;
-  loading = true;
-  // Keep the message the user is reading in the same place after older ones are added above.
-  const previousHeight = scroller.value?.scrollHeight ?? 0;
-  const top = scroller.value?.scrollTop ?? 0;
-  visibleCount.value += pageSize;
-  await nextTick();
-  if (scroller.value) scroller.value.scrollTop = top + scroller.value.scrollHeight - previousHeight;
-  loading = false;
+
+function loadOlder(_index: number, done: (stop?: boolean) => void) {
+  if (hasOlder.value) visibleCount.value += pageSize;
+  done(!hasOlder.value);
 }
 
-let observer: IntersectionObserver | undefined;
-onMounted(() => {
-  void toBottom();
-  observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.target === topSentinel.value && entry.isIntersecting) void loadOlder();
-        if (entry.target === bottomSentinel.value) {
-          atBottom.value = entry.isIntersecting;
-          if (entry.isIntersecting) newBelow.value = false;
-        }
-      }
-    },
-    // Start loading a little before the very top is reached.
-    { root: scroller.value ?? null, rootMargin: '160px 0px 0px 0px' },
-  );
-  if (topSentinel.value) observer.observe(topSentinel.value);
-  if (bottomSentinel.value) observer.observe(bottomSentinel.value);
-});
-onBeforeUnmount(() => observer?.disconnect());
+function trackPosition(info: {
+  verticalPosition: number;
+  verticalSize: number;
+  verticalContainerSize: number;
+}) {
+  atBottom.value = info.verticalSize - info.verticalContainerSize - info.verticalPosition <= 2;
+  if (atBottom.value) newBelow.value = false;
+}
 
 watch(
   () => props.channel.id,
   () => {
     visibleCount.value = pageSize;
-    void toBottom();
+    newBelow.value = false;
+    atBottom.value = true;
   },
 );
 watch(
