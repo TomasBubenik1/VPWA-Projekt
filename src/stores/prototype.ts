@@ -9,6 +9,11 @@ export const presenceLabels: Record<Presence, string> = {
   dnd: 'Nerušiť',
   offline: 'Offline',
 };
+export const presenceColors: Record<Presence, string> = {
+  online: 'green-5',
+  dnd: 'amber-7',
+  offline: 'grey-6',
+};
 export interface PrototypeUser {
   id: string;
   fullName: string;
@@ -441,7 +446,7 @@ export const usePrototypeStore = defineStore('prototype', () => {
       body: message.body.slice(0, 120),
       sentAt: message.sentAt,
     });
-    return 'Notifikácia vytvorená. Nájdete ju v ukážke upozornení.';
+    return 'Upozornenie zobrazené.';
   }
   function setStatus(value: Presence) {
     requireUser();

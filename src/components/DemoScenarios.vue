@@ -1,19 +1,28 @@
 <template>
   <q-dialog
     :model-value="modelValue"
-    position="right"
+    :position="$q.screen.width <= 700 ? 'standard' : 'right'"
+    full-height
+    :maximized="$q.screen.width <= 700"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <q-card class="side-panel demo-panel">
-      <q-card-section class="dialog-heading"
+    <q-card
+      flat
+      bordered
+      class="q-dialog-plugin"
+      :class="$q.screen.width <= 700 ? 'full-width' : ''"
+    >
+      <q-card-section class="row items-start justify-between"
         ><div>
-          <h2>Vyskúšať scenáre</h2>
-          <p>Lokálna simulácia pre prezentáciu</p>
+          <h2 class="text-h6 q-ma-none">Vyskúšať scenáre</h2>
+          <p class="q-mb-none" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+            Lokálna simulácia pre prezentáciu
+          </p>
         </div>
         <q-btn flat round dense icon="close" aria-label="Zavrieť scenáre" v-close-popup
       /></q-card-section>
-      <q-card-section class="demo-account-section"
-        ><h3>Pohľad používateľa</h3>
+      <q-card-section
+        ><h3 class="text-subtitle1 text-weight-medium q-ma-none">Pohľad používateľa</h3>
         <q-select
           :model-value="store.nickname"
           outlined
@@ -28,15 +37,15 @@
           "
           @update:model-value="requestUserSwitch"
         />
-        <p class="helper">
+        <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           Prepnite účet a prijmite pozvánku alebo hlasujte ako iný člen. Zmeny kanálov sú spoločné
           pre tieto demo účty.
         </p></q-card-section
       >
       <q-separator />
       <q-card-section
-        ><h3>Prichádzajúca správa</h3>
-        <p class="helper">
+        ><h3 class="text-subtitle1 text-weight-medium q-ma-none">Prichádzajúca správa</h3>
+        <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           {{ store.activeChannel ? `Do #${store.activeChannel.name}` : 'Najprv vyberte kanál.' }}
         </p>
         <q-select
@@ -55,7 +64,7 @@
           class="q-mt-md"
           maxlength="4000"
         /><q-toggle v-model="simulateHidden" label="Simulovať skrytú aplikáciu" color="primary" />
-        <p class="helper">
+        <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           Skutočná viditeľnosť: {{ $q.appVisible ? 'viditeľná' : 'skrytá' }}. Stav príjemcu:
           {{ store.status }}.
         </p>
@@ -67,12 +76,19 @@
           :disable="!sender || !body.trim()"
           @click="receive"
         />
-        <p v-if="result" class="scenario-result" role="status">{{ result }}</p></q-card-section
+        <q-banner
+          v-if="result"
+          dense
+          class="q-mt-sm"
+          :class="$q.dark.isActive ? 'bg-teal-10' : 'bg-green-2'"
+          role="status"
+          >{{ result }}</q-banner
+        ></q-card-section
       >
       <q-separator />
       <q-card-section
-        ><h3>Písanie v reálnom čase</h3>
-        <p class="helper">
+        ><h3 class="text-subtitle1 text-weight-medium q-ma-none">Písanie v reálnom čase</h3>
+        <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           Spustite ukážku a zavrite panel. Kliknutím na prezývku nad editorom uvidíte pribúdajúci
           text.
         </p>
@@ -91,29 +107,10 @@
           :disable="!sender || store.status === 'offline'"
           @update:model-value="store.setDemoDraft(sender, String($event ?? ''))"
         />
-        <p class="helper">
+        <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           Každá zmena sa hneď prejaví v náhľade. Rozpísaný text nie je odoslanou správou.
         </p></q-card-section
       >
-      <q-separator />
-      <q-card-section
-        ><h3>
-          Ukážka upozornení <span class="count-badge">{{ store.notices.length }}</span>
-        </h3>
-        <p v-if="!store.notices.length" class="helper">
-          Zatiaľ žiadne. Doručte správu so simuláciou skrytej aplikácie a stavom Online.
-        </p>
-        <div v-for="notice in store.notices" :key="notice.id" class="notice-card">
-          <b>@{{ notice.from }}</b>
-          <p>{{ notice.body }}</p>
-        </div>
-        <q-btn
-          v-if="store.notices.length"
-          flat
-          no-caps
-          label="Vymazať upozornenia"
-          @click="clearNoticesOpen = true"
-      /></q-card-section>
     </q-card>
   </q-dialog>
   <ConfirmationDialog
@@ -122,14 +119,6 @@
     :message="`Rozpracované písanie sa zastaví a budete pokračovať ako @${nextUser}.`"
     confirm-label="Prepnúť účet"
     @confirm="switchUser"
-  />
-  <ConfirmationDialog
-    v-model="clearNoticesOpen"
-    title="Vymazať upozornenia?"
-    message="Všetky aktuálne upozornenia sa odstránia."
-    confirm-label="Vymazať"
-    destructive
-    @confirm="store.notices = []"
   />
 </template>
 <script setup lang="ts">
@@ -148,7 +137,6 @@ const result = ref('');
 const playing = ref(false);
 const nextUser = ref('');
 const switchUserOpen = ref(false);
-const clearNoticesOpen = ref(false);
 const senderOptions = computed(() =>
   (store.activeChannel?.members ?? [])
     .filter((n) => n !== store.nickname)
@@ -178,11 +166,13 @@ function switchUser() {
 }
 function receive() {
   try {
-    result.value = store.receiveDemoMessage(
+    const previousNoticeId = store.notices[0]?.id;
+    const response = store.receiveDemoMessage(
       sender.value,
       body.value,
       simulateHidden.value ? false : $q.appVisible,
     );
+    result.value = store.notices[0]?.id === previousNoticeId ? response : '';
   } catch (e) {
     result.value = e instanceof Error ? e.message : 'Správu sa nepodarilo doručiť.';
   }

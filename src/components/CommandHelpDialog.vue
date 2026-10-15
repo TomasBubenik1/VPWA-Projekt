@@ -1,10 +1,12 @@
 <template>
   <q-dialog v-model="open">
-    <q-card class="prototype-dialog help-dialog">
-      <q-card-section class="dialog-heading">
+    <q-card flat bordered class="q-dialog-plugin">
+      <q-card-section class="row items-start justify-between">
         <div>
-          <h2>Prehľad príkazov</h2>
-          <p>Napíšte ich do poľa na správu.</p>
+          <h2 class="text-h6 q-ma-none">Prehľad príkazov</h2>
+          <p class="q-mb-none" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+            Napíšte ich do poľa na správu.
+          </p>
         </div>
         <q-btn flat round dense icon="close" aria-label="Zavrieť príkazy" v-close-popup />
       </q-card-section>
@@ -18,14 +20,21 @@
         >
           <q-item-section>
             <q-item-label
-              ><code>{{ item.syntax }}</code></q-item-label
+              ><code class="text-primary">{{ item.syntax }}</code></q-item-label
             >
-            <q-item-label caption>{{ item.description }}</q-item-label>
+            <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+              {{ item.description }}
+            </q-item-label>
           </q-item-section>
-          <q-item-section side><q-icon name="south_west" size="17px" /></q-item-section>
+          <q-item-section side :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+            ><q-icon name="south_west" size="17px"
+          /></q-item-section>
         </q-item>
       </q-list>
-      <q-card-section class="helper">
+      <q-card-section
+        class="text-caption"
+        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+      >
         Kliknutím vložíte príkaz. Pred odoslaním doplňte názov alebo prezývku.
       </q-card-section>
     </q-card>

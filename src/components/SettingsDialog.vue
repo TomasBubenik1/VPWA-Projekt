@@ -1,52 +1,52 @@
 <template>
   <q-dialog v-model="open">
-    <q-card class="prototype-dialog settings-dialog">
-      <q-card-section class="dialog-heading">
-        <div>
-          <h2>Vaše nastavenia</h2>
-          <p>{{ store.user?.email }}</p>
-        </div>
-        <q-btn flat round dense icon="close" aria-label="Zavrieť nastavenia" v-close-popup />
+    <q-card flat bordered class="q-dialog-plugin">
+      <q-card-section>
+        <h2 class="text-h6 q-ma-none">Vaše nastavenia</h2>
+        <p class="q-mb-none" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+          {{ store.user?.email }}
+        </p>
       </q-card-section>
-      <q-card-section class="settings-groups">
+      <q-card-section>
         <section>
-          <h3><q-icon name="person_outline" aria-hidden="true" />Dostupnosť</h3>
+          <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Dostupnosť</h3>
           <q-btn-toggle
             :model-value="store.status"
             spread
             no-caps
             unelevated
-            class="segmented"
             toggle-color="primary"
             :options="statusOptions"
             @update:model-value="store.setStatus"
           />
-          <p class="helper">{{ statusHelp[store.status] }}</p>
+          <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+            {{ statusHelp[store.status] }}
+          </p>
         </section>
+        <q-separator class="q-my-md" />
         <section>
-          <h3><q-icon name="notifications_none" aria-hidden="true" />Upozornenia</h3>
+          <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Upozornenia</h3>
           <q-toggle v-model="store.directOnly" label="Iba správy adresované mne" color="primary" />
         </section>
+        <q-separator class="q-my-md" />
         <section>
-          <h3><q-icon name="palette" aria-hidden="true" />Vzhľad</h3>
+          <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Vzhľad</h3>
           <q-btn-toggle
             v-model="theme"
             spread
             no-caps
             unelevated
-            class="segmented"
             toggle-color="primary"
             :options="themeOptions"
           />
         </section>
       </q-card-section>
-      <q-card-actions align="between">
+      <q-card-actions align="between" class="q-px-md q-pb-md">
         <q-btn
-          outline
+          unelevated
           no-caps
           color="negative"
-          icon="logout"
-          class="logout-button"
+          text-color="white"
           label="Odhlásiť sa"
           @click="signOutOpen = true"
         />

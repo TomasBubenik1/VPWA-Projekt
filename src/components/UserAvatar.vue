@@ -1,7 +1,13 @@
 <template>
-  <span class="avatar" aria-hidden="true">
+  <q-avatar
+    rounded
+    size="36px"
+    :color="$q.dark.isActive ? 'secondary' : 'green-2'"
+    :text-color="$q.dark.isActive ? 'grey-1' : 'teal-10'"
+    aria-hidden="true"
+  >
     {{ initials }}
-  </span>
+  </q-avatar>
 </template>
 
 <script setup lang="ts">

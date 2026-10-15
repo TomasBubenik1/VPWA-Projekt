@@ -1,91 +1,99 @@
 <template>
-  <div ref="scroller" class="message-scroll" tabindex="0" aria-label="História správ">
-    <div class="message-column">
-      <div ref="topSentinel" class="scroll-sentinel" aria-hidden="true" />
+  <div ref="scroller" class="col overflow-auto" tabindex="0" aria-label="História správ">
+    <div class="column no-wrap q-px-md q-pt-sm q-pb-xl">
+      <div ref="topSentinel" aria-hidden="true" />
       <q-btn
         v-if="hasOlder"
         flat
         no-caps
         color="primary"
-        class="history-more"
+        class="self-center q-my-sm"
         label="Načítať staršie správy"
         @click="loadOlder"
       />
-      <div v-else class="history-end">
+      <div
+        v-else
+        class="row flex-center q-my-md text-caption q-gutter-sm"
+        :class="isDark ? 'text-grey-4' : 'text-grey-7'"
+      >
         <q-icon name="chat_bubble_outline" size="17px" />
         <span>Toto je začiatok konverzácie.</span>
       </div>
       <template v-for="(message, index) in visible" :key="message.id">
         <div
           v-if="index === 0 || day(message.sentAt) !== day(visible[index - 1]?.sentAt ?? 0)"
-          class="date-divider"
+          class="row no-wrap items-center q-gutter-sm q-my-md text-caption"
+          :class="isDark ? 'text-grey-4' : 'text-grey-7'"
         >
+          <q-separator class="col" />
           <span>{{ day(message.sentAt) }}</span>
+          <q-separator class="col" />
         </div>
-        <div
-          class="message-entry"
-          :class="{
-            'message-entry-own': message.nickname === store.nickname,
-          }"
+        <q-chat-message
+          :sent="message.nickname === store.nickname"
+          :bg-color="bubbleColor(message)"
+          :text-color="bubbleTextColor(message)"
+          :aria-label="`Správa od ${name(message.nickname)}`"
+          class="q-mb-lg"
         >
-          <UserAvatar v-if="message.nickname !== store.nickname" :nickname="message.nickname" />
-          <article
-            class="message-row"
-            :class="{
-              'message-mentioned': mentions(message.body, store.nickname),
-              'message-own': message.nickname === store.nickname,
-            }"
-          >
-            <div class="message-copy">
-              <header>
-                <b v-if="message.nickname !== store.nickname">{{ name(message.nickname) }}</b>
-                <time
-                  v-if="message.nickname !== store.nickname"
-                  :datetime="new Date(message.sentAt).toISOString()"
-                >
-                  {{ time(message.sentAt) }}
-                </time>
-                <time
-                  v-if="message.nickname === store.nickname"
-                  :datetime="new Date(message.sentAt).toISOString()"
-                >
-                  {{ time(message.sentAt) }}
-                </time>
-                <span v-if="mentions(message.body, store.nickname)" class="mention-label">
-                  <q-icon name="alternate_email" size="13px" />pre vás
-                </span>
-              </header>
-              <p>
-                <template v-for="(part, partIndex) in splitMentions(message.body)" :key="partIndex"
-                  ><span v-if="part.startsWith('@')" class="mention">{{ part }}</span
-                  ><template v-else>{{ part }}</template></template
-                >
-              </p>
-            </div>
-          </article>
-        </div>
+          <template v-if="message.nickname !== store.nickname" #avatar>
+            <UserAvatar :nickname="message.nickname" class="self-end q-mr-md" />
+          </template>
+          <div>
+            <header class="row items-center">
+              <b v-if="message.nickname !== store.nickname" class="q-mr-sm">{{
+                name(message.nickname)
+              }}</b>
+              <time
+                class="text-caption q-mr-sm"
+                :class="timestampClass(message)"
+                :datetime="new Date(message.sentAt).toISOString()"
+              >
+                {{ time(message.sentAt) }}
+              </time>
+              <span
+                v-if="message.nickname !== store.nickname && mentions(message.body, store.nickname)"
+                class="text-caption"
+                :class="isDark ? 'text-green-2' : 'text-teal-10'"
+              >
+                <q-icon name="alternate_email" size="13px" />pre vás
+              </span>
+            </header>
+            <p class="q-mt-xs q-mb-none">
+              <template v-for="(part, partIndex) in splitMentions(message.body)" :key="partIndex"
+                ><br v-if="part === '\n'" /><span
+                  v-else-if="part.startsWith('@')"
+                  :class="mentionClass(message)"
+                  >{{ part }}</span
+                ><template v-else>{{ part }}</template></template
+              >
+            </p>
+          </div>
+        </q-chat-message>
       </template>
-      <div ref="bottomSentinel" class="scroll-sentinel" aria-hidden="true" />
+      <div ref="bottomSentinel" aria-hidden="true" />
     </div>
-    <q-btn
-      v-if="newBelow"
-      class="new-messages"
-      unelevated
-      no-caps
-      color="primary"
-      icon="arrow_downward"
-      label="Nové správy"
-      @click="toBottom"
-    />
+    <q-page-sticky v-if="newBelow" position="bottom" :offset="[0, 12]">
+      <q-btn
+        unelevated
+        no-caps
+        color="primary"
+        icon="arrow_downward"
+        label="Nové správy"
+        @click="toBottom"
+      />
+    </q-page-sticky>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import UserAvatar from './UserAvatar.vue';
 import { mentions, usePrototypeStore } from '@/stores/prototype';
-import type { PrototypeChannel } from '@/stores/prototype';
+import type { PrototypeChannel, PrototypeMessage } from '@/stores/prototype';
 
+// Bubbles use Quasar QChatMessage: https://quasar.dev/vue-components/chat/
 // Use case 7: history is rendered by pages of 12 messages. Older pages load when the top
 // of the list scrolls into view. IntersectionObserver reports only that change, so no
 // work runs on every scroll event.
@@ -93,6 +101,8 @@ import type { PrototypeChannel } from '@/stores/prototype';
 const pageSize = 12;
 const props = defineProps<{ channel: PrototypeChannel }>();
 const store = usePrototypeStore();
+const $q = useQuasar();
+const isDark = computed(() => $q.dark.isActive);
 const scroller = ref<HTMLElement>();
 const topSentinel = ref<HTMLElement>();
 const bottomSentinel = ref<HTMLElement>();
@@ -109,7 +119,25 @@ const time = (value: number) =>
 const day = (value: number) =>
   new Intl.DateTimeFormat('sk', { day: 'numeric', month: 'long' }).format(value);
 const name = (nick: string) => store.data.users.find((u) => u.nickname === nick)?.fullName ?? nick;
-const splitMentions = (body: string) => body.split(/(@[a-zA-Z][a-zA-Z0-9_]*)/g);
+const splitMentions = (body: string) => body.split(/(@[a-zA-Z][a-zA-Z0-9_]*|\n)/g);
+function bubbleColor(message: PrototypeMessage) {
+  if (message.nickname === store.nickname) return isDark.value ? 'teal-10' : 'primary';
+  if (mentions(message.body, store.nickname)) return isDark.value ? 'secondary' : 'green-2';
+  return isDark.value ? 'grey-9' : 'grey-4';
+}
+function bubbleTextColor(message: PrototypeMessage) {
+  if (message.nickname === store.nickname) return 'white';
+  return isDark.value ? 'grey-1' : 'grey-10';
+}
+function timestampClass(message: PrototypeMessage) {
+  if (message.nickname === store.nickname) return 'text-white';
+  if (isDark.value && mentions(message.body, store.nickname)) return 'text-grey-2';
+  return isDark.value ? 'text-grey-4' : 'text-grey-9';
+}
+function mentionClass(message: PrototypeMessage) {
+  if (message.nickname === store.nickname) return 'text-white';
+  return isDark.value ? 'text-green-2 text-weight-medium' : 'text-teal-10';
+}
 
 async function toBottom() {
   await nextTick();

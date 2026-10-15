@@ -1,42 +1,57 @@
 <template>
-  <footer class="command-dock">
-    <div class="composer-toolbar">
-      <div class="command-hints">
-        <q-btn flat dense no-caps icon="terminal" label="Príkazy" @click="emit('help')" />
-        <small v-if="commandLine.length > 3500">{{ commandLine.length }}/4000</small>
-      </div>
-      <div class="typing-line" aria-live="polite">
-        <button v-if="typingHere" type="button" @click="emit('showDraft')">
-          <span class="typing-dots" aria-hidden="true"><i /><i /><i /></span>
-          <span>@{{ store.typing?.nickname }} píše</span>
-          <span class="typing-hint">Náhľad</span>
-        </button>
-      </div>
-    </div>
-    <div class="composer" :class="{ 'composer-error': commandError }">
-      <q-input
-        ref="composerInput"
-        v-model="commandLine"
-        borderless
-        autogrow
-        maxlength="4000"
-        :placeholder="channel ? `Správa do #${channel.name}` : '/join názov-kanála'"
-        aria-label="Správa alebo príkaz"
-        @keydown.enter.exact="onEnter"
-        @update:model-value="commandError = ''"
-      />
+  <div class="q-px-md q-pb-md">
+    <div class="row items-center justify-between">
       <q-btn
-        unelevated
-        round
+        outline
+        dense
+        no-caps
+        :color="$q.dark.isActive ? 'grey-4' : 'grey-8'"
+        icon="terminal"
+        label="Príkazy"
+        @click="emit('help')"
+      />
+      <small
+        v-if="commandLine.length > 3500"
+        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+        >{{ commandLine.length }}/4000</small
+      >
+      <q-btn
+        v-if="typingHere"
+        flat
+        dense
+        no-caps
         color="primary"
-        icon="arrow_upward"
-        aria-label="Odoslať správu alebo príkaz"
-        :disable="!commandLine.trim()"
-        @click="submitCommand"
+        :label="`@${store.typing?.nickname} píše`"
+        @click="emit('showDraft')"
       />
     </div>
-    <p v-if="commandError" class="inline-error" role="alert">{{ commandError }}</p>
-  </footer>
+    <q-input
+      ref="composerInput"
+      v-model="commandLine"
+      outlined
+      autogrow
+      maxlength="4000"
+      :placeholder="channel ? `Správa do #${channel.name}` : '/join názov-kanála'"
+      aria-label="Správa alebo príkaz"
+      :error="!!commandError"
+      :error-message="commandError"
+      hide-bottom-space
+      @keydown.enter.exact="onEnter"
+      @update:model-value="commandError = ''"
+    >
+      <template #append>
+        <q-btn
+          unelevated
+          padding="6px"
+          color="primary"
+          icon="arrow_upward"
+          aria-label="Odoslať správu alebo príkaz"
+          :disable="!commandLine.trim()"
+          @click="submitCommand"
+        />
+      </template>
+    </q-input>
+  </div>
 </template>
 
 <script setup lang="ts">

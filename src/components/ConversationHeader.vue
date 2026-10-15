@@ -1,24 +1,27 @@
 <template>
-  <header class="conversation-header">
+  <q-toolbar class="q-px-md q-py-sm">
     <q-btn
+      v-if="$q.screen.width <= 700"
       flat
       round
       icon="menu"
-      class="mobile-control"
       aria-label="Otvoriť kanály"
       @click="emit('openSidebar')"
     />
-    <div class="conversation-heading">
-      <div class="channel-title">
-        <q-icon
-          class="channel-icon channel-icon-large"
-          :name="channel?.isPrivate ? 'lock_outline' : 'tag'"
-          size="20px"
-        />
-        <h1>{{ channel?.name ?? 'Vaše konverzácie' }}</h1>
-      </div>
-    </div>
-    <div class="header-actions">
+    <q-avatar
+      v-if="$q.screen.width > 700"
+      rounded
+      size="34px"
+      :color="$q.dark.isActive ? 'secondary' : 'green-2'"
+      :text-color="$q.dark.isActive ? 'green-2' : 'teal-10'"
+      class="q-mr-sm"
+    >
+      <q-icon :name="channel?.isPrivate ? 'lock_outline' : 'tag'" size="20px" />
+    </q-avatar>
+    <q-toolbar-title class="text-h6 text-weight-medium ellipsis">{{
+      channel?.name ?? 'Vaše konverzácie'
+    }}</q-toolbar-title>
+    <div class="row no-wrap items-center">
       <q-btn
         flat
         no-caps
@@ -32,7 +35,7 @@
       </q-btn>
       <q-btn flat round icon="more_horiz" aria-label="Možnosti kanála" :disable="!channel">
         <q-menu anchor="bottom right" self="top right">
-          <q-list class="header-menu">
+          <q-list>
             <q-item
               clickable
               v-close-popup
@@ -47,7 +50,12 @@
               <q-item-section>Prehľad príkazov</q-item-section>
             </q-item>
             <q-separator />
-            <q-item clickable v-close-popup class="text-negative" @click="emit('leave')">
+            <q-item
+              clickable
+              v-close-popup
+              :class="$q.dark.isActive ? 'text-red-4' : 'text-negative'"
+              @click="emit('leave')"
+            >
               <q-item-section avatar><q-icon name="logout" /></q-item-section>
               <q-item-section>Opustiť kanál</q-item-section>
             </q-item>
@@ -55,7 +63,7 @@
               v-if="isOwner"
               clickable
               v-close-popup
-              class="text-negative"
+              :class="$q.dark.isActive ? 'text-red-4' : 'text-negative'"
               @click="emit('destroy')"
             >
               <q-item-section avatar><q-icon name="delete_outline" /></q-item-section>
@@ -65,7 +73,8 @@
         </q-menu>
       </q-btn>
     </div>
-  </header>
+  </q-toolbar>
+  <q-separator />
 </template>
 
 <script setup lang="ts">

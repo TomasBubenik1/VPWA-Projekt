@@ -1,9 +1,11 @@
 <template>
   <q-dialog v-model="open">
-    <q-card class="prototype-dialog">
+    <q-card flat bordered class="q-dialog-plugin">
       <q-card-section>
-        <h2>{{ mode === 'destroy' ? 'Zrušiť kanál?' : 'Opustiť kanál?' }}</h2>
-        <p>
+        <h2 class="text-h6 q-ma-none">
+          {{ mode === 'destroy' ? 'Zrušiť kanál?' : 'Opustiť kanál?' }}
+        </h2>
+        <p class="q-mb-none q-mt-sm">
           {{
             mode === 'destroy'
               ? `Kanál #${channel?.name} aj jeho správy sa odstránia všetkým členom. Tento krok sa nedá vrátiť.`
@@ -13,7 +15,7 @@
           }}
         </p>
       </q-card-section>
-      <q-card-actions align="right">
+      <q-card-actions align="right" class="q-px-md q-pb-md">
         <q-btn flat no-caps label="Zostať" v-close-popup />
         <q-btn
           unelevated
