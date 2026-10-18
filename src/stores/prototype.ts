@@ -205,11 +205,20 @@ export function createPrototypeStore() {
       (i) => i.channelId !== id || i.to !== state.nickname,
     );
   }
+  function removeMemberVotes(channel: PrototypeChannel, nickname: string) {
+    delete channel.votes[nickname];
+    for (const [target, voters] of Object.entries(channel.votes)) {
+      const remaining = voters.filter((voter) => voter !== nickname);
+      if (remaining.length) channel.votes[target] = remaining;
+      else delete channel.votes[target];
+    }
+  }
   function leaveChannel(id: string) {
     const channel = requireChannel(id);
     if (channel.owner === state.nickname) removeChannel(id);
     else {
       channel.members = channel.members.filter((n) => n !== state.nickname);
+      removeMemberVotes(channel, state.nickname);
       repairSelection();
     }
   }
@@ -236,7 +245,7 @@ export function createPrototypeStore() {
       throw new Error('Používateľ nie je členom tohto kanála.');
     }
     if (kind === 'kick' && channel.owner !== state.nickname) {
-      const votes = channel.votes[to] ?? [];
+      const votes = (channel.votes[to] ?? []).filter((voter) => channel.members.includes(voter));
       if (votes.includes(state.nickname))
         throw new Error('Za vyradenie tohto člena ste už hlasovali.');
       channel.votes[to] = [...votes, state.nickname];
@@ -246,6 +255,7 @@ export function createPrototypeStore() {
       }
     }
     channel.members = channel.members.filter((n) => n !== to);
+    removeMemberVotes(channel, to);
     if (kind === 'kick') channel.banned.push(to);
     state.data.invitations = state.data.invitations.filter(
       (i) => i.channelId !== channel.id || i.to !== to,

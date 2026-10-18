@@ -14,7 +14,7 @@
     </q-item-section>
     <q-item-section class="ellipsis">{{ channel.name }}</q-item-section>
     <q-item-section v-if="!joined" side>
-      <q-icon name="add" size="18px" />
+      <q-icon name="add" size="18px" :color="$q.dark.isActive ? 'grey-4' : 'grey-7'" />
       <q-tooltip>Pripojiť sa ku #{{ channel.name }}</q-tooltip>
     </q-item-section>
     <q-item-section v-else side>
@@ -23,6 +23,7 @@
         round
         dense
         icon="more_horiz"
+        :color="$q.dark.isActive ? 'grey-4' : 'grey-7'"
         :aria-label="`Možnosti kanála ${channel.name}`"
         @click.stop
       >
@@ -88,7 +89,7 @@ const avatarColor = computed(() =>
       : 'green-2'
     : $q.dark.isActive
       ? 'grey-9'
-      : 'grey-3',
+      : 'grey-4',
 );
 const avatarTextColor = computed(() =>
   props.active
@@ -97,6 +98,6 @@ const avatarTextColor = computed(() =>
       : 'teal-10'
     : $q.dark.isActive
       ? 'grey-5'
-      : 'grey-7',
+      : 'grey-8',
 );
 </script>

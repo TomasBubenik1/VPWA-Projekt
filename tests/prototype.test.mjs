@@ -93,6 +93,21 @@ test('na ban sa počítajú tri odlišné hlasy, opakovaný hlas neplatí', () =
   store.moderate('nina', 'kick');
   assert.ok(store.activeChannel.banned.includes('nina'));
 });
+test('hlasy od členov, ktorí odišli alebo boli vyhodení, sa nezapočítajú', () => {
+  login('mira');
+  store.selectChannel('c-general');
+  store.moderate('nina', 'kick');
+  store.leaveChannel('c-general');
+  login('jules');
+  store.selectChannel('c-general');
+  store.moderate('nina', 'kick');
+  assert.deepEqual(store.activeChannel.votes.nina, ['jules']);
+
+  login('alex');
+  store.selectChannel('c-general');
+  store.moderate('jules', 'kick');
+  assert.equal(store.activeChannel.votes.nina, undefined);
+});
 test('člen nemôže čítať zoznam ani písať mimo svojho kanála', () => {
   store.selectChannel('c-launch');
   assert.equal(store.activeChannel, undefined);

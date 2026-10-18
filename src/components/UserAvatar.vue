@@ -3,8 +3,8 @@
     rounded
     :size="size"
     :font-size="fontSize"
-    :color="$q.dark.isActive ? 'secondary' : 'green-2'"
-    :text-color="$q.dark.isActive ? 'grey-1' : 'teal-10'"
+    :color="currentUser ? 'primary' : $q.dark.isActive ? 'grey-9' : 'grey-4'"
+    :text-color="currentUser ? 'white' : $q.dark.isActive ? 'grey-5' : 'grey-8'"
     aria-hidden="true"
   >
     {{ initials }}
@@ -19,6 +19,7 @@ import { usePrototypeStore } from '@/stores/prototype';
 const props = withDefaults(
   defineProps<{
     nickname: string;
+    currentUser?: boolean;
     size?: string;
     fontSize?: string;
   }>(),
@@ -37,3 +38,9 @@ const initials = computed(() =>
     .join(''),
 );
 </script>
+
+<style scoped>
+.q-avatar {
+  border-radius: 14px;
+}
+</style>

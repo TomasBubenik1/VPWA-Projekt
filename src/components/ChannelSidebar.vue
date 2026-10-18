@@ -96,16 +96,20 @@
       :aria-label="`Nastavenia profilu, ${store.user?.fullName ?? ''}`"
       @click="emit('settings')"
     >
-      <q-item-section avatar><UserAvatar :nickname="store.nickname" /></q-item-section>
+      <q-item-section avatar>
+        <UserAvatar :nickname="store.nickname" current-user size="44px" font-size="16px" />
+      </q-item-section>
       <q-item-section>
         <q-item-label>{{ store.user?.fullName }}</q-item-label>
-        <q-item-label caption>
+        <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           <q-badge rounded :color="presenceColors[store.status]" class="q-mr-xs" />{{
             presenceLabels[store.status]
           }}
         </q-item-label>
       </q-item-section>
-      <q-item-section side><q-icon name="tune" size="20px" /></q-item-section>
+      <q-item-section side>
+        <q-icon name="tune" size="20px" :color="$q.dark.isActive ? 'grey-4' : 'grey-7'" />
+      </q-item-section>
     </q-item>
   </div>
 </template>

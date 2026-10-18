@@ -1,12 +1,7 @@
 <template>
   <article class="row no-wrap items-start q-mb-md" :aria-label="`Správa od ${authorName}`">
     <div v-if="!sent" class="col-auto q-mr-sm q-pt-sm">
-      <UserAvatar
-        :nickname="message.nickname"
-        size="44px"
-        font-size="16px"
-        class="message-avatar"
-      />
+      <UserAvatar :nickname="message.nickname" size="44px" font-size="16px" />
     </div>
     <div class="col row" :class="sent ? 'justify-end' : 'q-ml-xs'">
       <q-card
@@ -92,9 +87,5 @@ const formattedTime = computed(() =>
 .message-bubble {
   border-radius: 12px;
   overflow-wrap: anywhere;
-}
-
-.message-avatar {
-  border-radius: 14px;
 }
 </style>
