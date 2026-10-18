@@ -21,9 +21,7 @@
           <q-item-section>
             <q-item-label>{{ displayName(member) }}</q-item-label>
             <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
-              <q-badge rounded :color="presenceColors[presence(member)]" class="q-mr-xs" />@{{
-                member
-              }},
+              @{{ member }},
               {{ member === channel?.owner ? 'správca' : presenceLabels[presence(member)] }}
             </q-item-label>
             <q-item-label
@@ -85,7 +83,7 @@
 import { computed, ref, watch } from 'vue';
 import UserAvatar from './UserAvatar.vue';
 import ConfirmationDialog from './ConfirmationDialog.vue';
-import { presenceColors, presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
 import { memberCount } from '@/utils/format';
 
 // Use case 10 (/list) and the UI way to /revoke or /kick a member.

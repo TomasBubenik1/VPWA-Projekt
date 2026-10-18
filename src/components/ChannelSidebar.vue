@@ -102,9 +102,7 @@
       <q-item-section>
         <q-item-label>{{ store.user?.fullName }}</q-item-label>
         <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
-          <q-badge rounded :color="presenceColors[store.status]" class="q-mr-xs" />{{
-            presenceLabels[store.status]
-          }}
+          {{ presenceLabels[store.status] }}
         </q-item-label>
       </q-item-section>
       <q-item-section side>
@@ -119,7 +117,7 @@ import { computed, ref } from 'vue';
 import ChannelListItem from './ChannelListItem.vue';
 import ChannelInvitation from './ChannelInvitation.vue';
 import UserAvatar from './UserAvatar.vue';
-import { presenceColors, presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
 import type { ChannelAction } from '@/composables/useChannelAction';
 
 const props = defineProps<{ mobile: boolean }>();
