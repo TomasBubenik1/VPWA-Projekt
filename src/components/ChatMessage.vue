@@ -1,18 +1,18 @@
 <template>
-  <article class="row no-wrap items-start q-mb-lg" :aria-label="`Správa od ${authorName}`">
+  <article class="row no-wrap items-start q-mb-md" :aria-label="`Správa od ${authorName}`">
     <div v-if="!sent" class="col-auto q-mr-sm q-pt-sm">
       <UserAvatar
         :nickname="message.nickname"
         size="44px"
         font-size="16px"
-        class="message-avatar q-mt-xs"
+        class="message-avatar"
       />
     </div>
     <div class="col row" :class="sent ? 'justify-end' : 'q-ml-xs'">
       <q-card
         flat
         bordered
-        class="col-shrink q-pa-md message-bubble"
+        class="col-shrink message-bubble"
         :class="[
           `bg-${sent ? (isDark ? 'teal-10' : 'primary') : isDark ? (addressed ? 'secondary' : 'grey-9') : 'white'}`,
           sent ? 'text-white' : isDark ? 'text-grey-1' : 'text-dark',
@@ -43,7 +43,7 @@
             <q-icon name="alternate_email" size="13px" />pre vás
           </span>
         </header>
-        <p class="text-body1 q-mt-sm q-mb-none">
+        <p class="text-body1 q-mt-xs q-mb-none">
           <template v-for="(part, index) in parts" :key="index">
             <br v-if="part === '\n'" />
             <span
@@ -89,6 +89,7 @@ const formattedTime = computed(() =>
 
 <style scoped>
 .message-bubble {
+  padding: 8px 12px;
   border-radius: 12px;
   overflow-wrap: anywhere;
 }

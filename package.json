@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "prettier --write src tests \"*.{js,ts,html,md,json}\" && eslint --fix -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
     "lint:check": "prettier --check src tests \"*.{js,ts,html,md,json}\" && eslint -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
-    "test": "node --experimental-strip-types --test tests/prototype.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "dev": "quasar dev",
     "build": "quasar build",
     "typecheck": "vue-tsc --noEmit",

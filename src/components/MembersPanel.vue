@@ -1,16 +1,11 @@
 <template>
   <q-dialog
     v-model="open"
-    :position="$q.screen.width <= 700 ? 'standard' : 'right'"
+    :position="mobile ? 'standard' : 'right'"
     full-height
-    :maximized="$q.screen.width <= 700"
+    :maximized="mobile"
   >
-    <q-card
-      flat
-      bordered
-      class="q-dialog-plugin"
-      :class="$q.screen.width <= 700 ? 'full-width' : ''"
-    >
+    <q-card flat bordered class="q-dialog-plugin" :class="mobile ? 'full-width' : ''">
       <q-card-section class="row items-start justify-between">
         <div>
           <h2 class="text-h6 q-ma-none">Členovia</h2>
@@ -47,7 +42,12 @@
             <q-btn flat round dense icon="more_horiz" :aria-label="`Možnosti člena ${member}`">
               <q-menu anchor="bottom right" self="top right">
                 <q-list>
-                  <q-item clickable v-close-popup class="text-negative" @click="target = member">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    class="text-negative"
+                    @click="requestModeration(member)"
+                  >
                     <q-item-section>{{ moderation.action }}</q-item-section>
                   </q-item>
                 </q-list>
@@ -56,7 +56,7 @@
           </q-item-section>
         </q-item>
       </q-list>
-      <q-card-section v-if="!channel?.isPrivate || isOwner">
+      <q-card-section v-if="channel && (!channel.isPrivate || isOwner)">
         <q-btn
           outline
           no-caps
@@ -69,33 +69,51 @@
     </q-card>
   </q-dialog>
 
-  <q-dialog :model-value="!!target" @update:model-value="target = ''">
-    <q-card flat bordered class="q-dialog-plugin">
-      <q-card-section>
-        <h2 class="text-h6 q-ma-none">{{ moderation.question }}</h2>
-        <p class="q-mt-sm q-mb-none">@{{ target }} {{ moderation.result }}</p>
-      </q-card-section>
-      <q-card-actions align="right" class="q-px-md q-pb-md">
-        <q-btn flat no-caps label="Zrušiť" @click="target = ''" />
-        <q-btn unelevated no-caps color="negative" label="Potvrdiť" @click="moderate" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+  <ConfirmationDialog
+    v-model="confirmationOpen"
+    :title="moderation.question"
+    :message="`@${target} ${moderation.result}`"
+    confirm-label="Potvrdiť"
+    destructive
+    :error="error"
+    :close-on-confirm="false"
+    @confirm="moderate"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import UserAvatar from './UserAvatar.vue';
+import ConfirmationDialog from './ConfirmationDialog.vue';
 import { presenceColors, presenceLabels, usePrototypeStore } from '@/stores/prototype';
 import { memberCount } from '@/utils/format';
 
 // Use case 10 (/list) and the UI way to /revoke or /kick a member.
 const open = defineModel<boolean>({ required: true });
+defineProps<{ mobile: boolean }>();
 const emit = defineEmits<{ invite: [] }>();
 const store = usePrototypeStore();
 const channel = computed(() => store.activeChannel);
 const isOwner = computed(() => channel.value?.owner === store.nickname);
 const target = ref('');
+const error = ref('');
+const confirmationOpen = ref(false);
+let targetChannelId = '';
+
+function requestModeration(member: string) {
+  target.value = member;
+  targetChannelId = store.activeChannelId;
+  error.value = '';
+  confirmationOpen.value = true;
+}
+watch(
+  () => [store.sessionId, store.activeChannelId, open.value],
+  () => {
+    confirmationOpen.value = false;
+    target.value = '';
+    error.value = '';
+  },
+);
 
 // Texts differ by channel type and role, rules are the same as /revoke and /kick.
 const moderation = computed(() => {
@@ -128,10 +146,13 @@ const canModerate = (member: string) =>
 
 function moderate() {
   try {
+    if (store.activeChannelId !== targetChannelId)
+      throw new Error('Kanál sa zmenil. Vyberte člena znova.');
     store.moderate(target.value, channel.value?.isPrivate ? 'revoke' : 'kick');
+    confirmationOpen.value = false;
+    target.value = '';
   } catch (e) {
-    store.feedback = e instanceof Error ? e.message : 'Akciu sa nepodarilo dokončiť.';
+    error.value = e instanceof Error ? e.message : 'Akciu sa nepodarilo dokončiť.';
   }
-  target.value = '';
 }
 </script>

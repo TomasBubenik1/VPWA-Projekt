@@ -1,35 +1,23 @@
 <template>
-  <div class="q-px-md q-pb-md">
-    <div class="row items-center justify-between">
-      <q-btn
-        outline
-        dense
-        no-caps
-        :color="$q.dark.isActive ? 'grey-4' : 'grey-8'"
-        icon="terminal"
-        label="Príkazy"
-        @click="emit('help')"
-      />
-      <small
-        v-if="commandLine.length > 3500"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-        >{{ commandLine.length }}/4000</small
-      >
-      <q-btn
-        v-if="typingHere"
-        flat
-        dense
-        no-caps
-        color="primary"
-        :label="`@${store.typing?.nickname} píše`"
-        @click="emit('showDraft')"
-      />
-    </div>
+  <div class="q-px-md q-py-sm">
+    <q-btn
+      v-if="typingHere"
+      flat
+      dense
+      no-caps
+      color="primary"
+      icon="edit_note"
+      class="q-mb-xs"
+      :label="`@${store.typing?.nickname} píše`"
+      @click="emit('showDraft')"
+    />
     <q-input
       ref="composerInput"
       v-model="commandLine"
       outlined
       autogrow
+      class="composer-input"
+      :bg-color="$q.dark.isActive ? 'grey-9' : 'white'"
       maxlength="4000"
       :placeholder="channel ? `Správa do #${channel.name}` : '/join názov-kanála'"
       aria-label="Správa alebo príkaz"
@@ -39,10 +27,25 @@
       @keydown.enter.exact="onEnter"
       @update:model-value="commandError = ''"
     >
+      <template #prepend>
+        <q-btn
+          flat
+          round
+          dense
+          icon="terminal"
+          :color="$q.dark.isActive ? 'grey-4' : 'grey-7'"
+          aria-label="Prehľad príkazov"
+          @click="emit('help')"
+        >
+          <q-tooltip>Prehľad príkazov</q-tooltip>
+        </q-btn>
+      </template>
       <template #append>
         <q-btn
           unelevated
-          padding="6px"
+          round
+          dense
+          size="14px"
           color="primary"
           icon="arrow_upward"
           aria-label="Odoslať správu alebo príkaz"
@@ -51,6 +54,14 @@
         />
       </template>
     </q-input>
+    <div
+      v-if="!mobile || commandLine.length > 3500"
+      class="row justify-end items-center q-px-xs q-pt-xs text-caption"
+      :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-7'"
+    >
+      <span v-if="commandLine.length > 3500" class="q-mr-auto">{{ commandLine.length }}/4000</span>
+      <span v-if="!mobile">Enter odoslať · Shift + Enter nový riadok</span>
+    </div>
   </div>
 </template>
 
@@ -60,6 +71,7 @@ import type { QInput } from 'quasar';
 import { usePrototypeStore } from '@/stores/prototype';
 
 // The fixed command line: every message and every /command goes through here.
+defineProps<{ mobile: boolean }>();
 const emit = defineEmits<{
   members: [];
   leave: [];
@@ -125,3 +137,13 @@ watch(
 
 defineExpose({ insert });
 </script>
+
+<style scoped>
+.composer-input :deep(.q-field__control) {
+  border-radius: 14px;
+}
+.composer-input :deep(textarea) {
+  max-height: 160px;
+  overflow-y: auto !important;
+}
+</style>

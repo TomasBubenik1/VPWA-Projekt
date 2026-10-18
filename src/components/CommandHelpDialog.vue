@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="open">
+  <q-dialog v-model="open" @hide="insertSelectedCommand">
     <q-card flat bordered class="q-dialog-plugin">
       <q-card-section class="row items-start justify-between">
         <div>
@@ -16,7 +16,7 @@
           :key="item.syntax"
           clickable
           v-close-popup
-          @click="emit('insert', item.example)"
+          @click="selectedCommand = item.example"
         >
           <q-item-section>
             <q-item-label
@@ -44,6 +44,13 @@
 <script setup lang="ts">
 const open = defineModel<boolean>({ required: true });
 const emit = defineEmits<{ insert: [value: string] }>();
+let selectedCommand = '';
+
+// Wait for the dialog to release keyboard focus before focusing the composer.
+function insertSelectedCommand() {
+  if (selectedCommand) emit('insert', selectedCommand);
+  selectedCommand = '';
+}
 
 // Syntax from the assignment, use cases 4 to 6 and 10.
 const commands = [

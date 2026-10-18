@@ -10,13 +10,12 @@
     @scroll="trackPosition"
   >
     <q-infinite-scroll
-      :key="channel.id"
       ref="infiniteScroll"
       reverse
       :offset="160"
       :scroll-target="scroller"
       :disable="!hasOlder"
-      class="column no-wrap q-px-md q-pt-sm q-pb-xl"
+      class="column no-wrap q-px-md q-pt-sm q-pb-md"
       @load="loadOlder"
     >
       <template #loading>
@@ -43,7 +42,7 @@
       </div>
       <template v-for="(message, index) in visible" :key="message.id">
         <div
-          v-if="index === 0 || day(message.sentAt) !== day(visible[index - 1]?.sentAt ?? 0)"
+          v-if="index === 0 || dayKey(message.sentAt) !== dayKey(visible[index - 1]?.sentAt ?? 0)"
           class="row no-wrap items-center q-gutter-sm q-my-md text-caption"
           :class="isDark ? 'text-grey-4' : 'text-grey-7'"
         >
@@ -60,7 +59,7 @@
         no-caps
         color="primary"
         icon="arrow_downward"
-        label="Nové správy"
+        :label="`Nové správy (${newBelow})`"
         @click="toBottom"
       />
     </q-page-sticky>
@@ -68,14 +67,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue';
 import { useQuasar, type QInfiniteScroll, type QScrollArea } from 'quasar';
 import ChatMessage from './ChatMessage.vue';
 import { usePrototypeStore } from '@/stores/prototype';
 import type { PrototypeChannel } from '@/stores/prototype';
+import { useMessageWindow } from '@/composables/useMessageWindow';
 
 // QInfiniteScroll reverse loads older pages and preserves the reader's scroll position.
-const pageSize = 12;
 const props = defineProps<{ channel: PrototypeChannel }>();
 const store = usePrototypeStore();
 const $q = useQuasar();
@@ -83,26 +82,28 @@ const isDark = computed(() => $q.dark.isActive);
 const scrollArea = ref<QScrollArea>();
 const infiniteScroll = ref<QInfiniteScroll>();
 const scroller = computed(() => scrollArea.value?.getScrollTarget());
-const visibleCount = ref(pageSize);
-const newBelow = ref(false);
+const newBelow = ref(0);
 const atBottom = ref(true);
 
-const sorted = computed(() => [...props.channel.messages].sort((a, b) => a.sentAt - b.sentAt));
-const visible = computed(() => sorted.value.slice(-visibleCount.value));
-const hasOlder = computed(() => visibleCount.value < sorted.value.length);
+const { visible, hasOlder, loadOlder: expandHistory } = useMessageWindow(toRef(props, 'channel'));
 
-const day = (value: number) =>
-  new Intl.DateTimeFormat('sk', { day: 'numeric', month: 'long' }).format(value);
+const dateFormat = new Intl.DateTimeFormat('sk', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const day = (value: number) => dateFormat.format(value);
+const dayKey = (value: number) => new Date(value).toDateString();
 
 async function toBottom() {
   await nextTick();
   scrollArea.value?.setScrollPosition('vertical', scroller.value?.scrollHeight ?? 0);
   atBottom.value = true;
-  newBelow.value = false;
+  newBelow.value = 0;
 }
 
 function loadOlder(_index: number, done: (stop?: boolean) => void) {
-  if (hasOlder.value) visibleCount.value += pageSize;
+  expandHistory();
   done(!hasOlder.value);
 }
 
@@ -111,25 +112,20 @@ function trackPosition(info: {
   verticalSize: number;
   verticalContainerSize: number;
 }) {
-  atBottom.value = info.verticalSize - info.verticalContainerSize - info.verticalPosition <= 2;
-  if (atBottom.value) newBelow.value = false;
+  atBottom.value = info.verticalSize - info.verticalContainerSize - info.verticalPosition <= 24;
+  if (atBottom.value) newBelow.value = 0;
 }
 
-watch(
-  () => props.channel.id,
-  () => {
-    visibleCount.value = pageSize;
-    newBelow.value = false;
-    atBottom.value = true;
-  },
-);
+// The workspace keys this component by account and channel, resetting scroll and unread state.
+onMounted(() => void toBottom());
 watch(
   () => props.channel.messages.length,
-  () => {
+  (count, previousCount) => {
+    if (count <= previousCount) return;
     const last = props.channel.messages.at(-1);
     // Follow new messages only when the reader is already at the end or wrote the message.
     if (atBottom.value || last?.nickname === store.nickname) void toBottom();
-    else newBelow.value = true;
+    else newBelow.value += count - previousCount;
   },
 );
 </script>

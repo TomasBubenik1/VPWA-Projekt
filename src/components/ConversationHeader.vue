@@ -1,7 +1,7 @@
 <template>
   <q-toolbar class="q-px-md q-py-sm">
     <q-btn
-      v-if="$q.screen.width <= 700"
+      v-if="mobile"
       flat
       round
       icon="menu"
@@ -9,7 +9,7 @@
       @click="emit('openSidebar')"
     />
     <q-avatar
-      v-if="$q.screen.width > 700"
+      v-if="!mobile"
       rounded
       size="34px"
       :color="$q.dark.isActive ? 'secondary' : 'green-2'"
@@ -82,6 +82,7 @@ import { computed } from 'vue';
 import { usePrototypeStore } from '@/stores/prototype';
 import { memberCount } from '@/utils/format';
 
+defineProps<{ mobile: boolean }>();
 const emit = defineEmits<{
   openSidebar: [];
   members: [];

@@ -1,17 +1,12 @@
 <template>
   <q-dialog
     :model-value="modelValue"
-    :position="$q.screen.width <= 700 ? 'standard' : 'right'"
+    :position="mobile ? 'standard' : 'right'"
     full-height
-    :maximized="$q.screen.width <= 700"
+    :maximized="mobile"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <q-card
-      flat
-      bordered
-      class="q-dialog-plugin"
-      :class="$q.screen.width <= 700 ? 'full-width' : ''"
-    >
+    <q-card flat bordered class="q-dialog-plugin" :class="mobile ? 'full-width' : ''">
       <q-card-section class="row items-start justify-between"
         ><div>
           <h2 class="text-h6 q-ma-none">Vyskúšať scenáre</h2>
@@ -126,7 +121,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import { useInterval, useQuasar } from 'quasar';
 import ConfirmationDialog from './ConfirmationDialog.vue';
 import { usePrototypeStore } from '@/stores/prototype';
-defineProps<{ modelValue: boolean }>();
+defineProps<{ modelValue: boolean; mobile: boolean }>();
 defineEmits<{ 'update:modelValue': [value: boolean] }>();
 const store = usePrototypeStore();
 const $q = useQuasar();
