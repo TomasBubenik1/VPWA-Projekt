@@ -59,6 +59,7 @@
     title="Odhlásiť sa?"
     message="Budete sa musieť znovu prihlásiť, aby ste mohli pokračovať."
     confirm-label="Odhlásiť sa"
+    destructive
     @confirm="store.signOut()"
   />
 </template>

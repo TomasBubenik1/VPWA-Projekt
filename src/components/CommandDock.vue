@@ -1,5 +1,5 @@
 <template>
-  <div class="q-px-md q-py-sm">
+  <div class="q-px-md q-pt-sm q-pb-md">
     <q-btn
       v-if="typingHere"
       flat
@@ -55,12 +55,11 @@
       </template>
     </q-input>
     <div
-      v-if="!mobile || commandLine.length > 3500"
+      v-if="commandLine.length > 3500"
       class="row justify-end items-center q-px-xs q-pt-xs text-caption"
       :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-7'"
     >
-      <span v-if="commandLine.length > 3500" class="q-mr-auto">{{ commandLine.length }}/4000</span>
-      <span v-if="!mobile">Enter odoslať · Shift + Enter nový riadok</span>
+      <span>{{ commandLine.length }}/4000</span>
     </div>
   </div>
 </template>
@@ -71,7 +70,6 @@ import type { QInput } from 'quasar';
 import { usePrototypeStore } from '@/stores/prototype';
 
 // The fixed command line: every message and every /command goes through here.
-defineProps<{ mobile: boolean }>();
 const emit = defineEmits<{
   members: [];
   leave: [];

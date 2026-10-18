@@ -12,38 +12,28 @@
       <q-card
         flat
         bordered
-        class="col-shrink message-bubble"
-        :class="[
-          `bg-${sent ? (isDark ? 'teal-10' : 'primary') : isDark ? (addressed ? 'secondary' : 'grey-9') : 'white'}`,
-          sent ? 'text-white' : isDark ? 'text-grey-1' : 'text-dark',
-        ]"
+        class="col-shrink message-bubble q-px-sm q-pt-sm q-pb-sm"
+        :class="[`bg-${bubbleColor}`, sent ? 'text-white' : isDark ? 'text-grey-1' : 'text-dark']"
+        :style="{ maxWidth: $q.screen.lt.sm ? '85%' : 'min(72%, 640px)' }"
       >
-        <header class="row items-baseline text-body1">
-          <span v-if="!sent" class="text-weight-bold q-mr-sm">{{ authorName }}</span>
+        <header v-if="!sent" class="row items-baseline text-body1">
+          <span class="text-weight-bold q-mr-sm">{{ authorName }}</span>
           <time
             class="text-body2 q-mr-sm text-no-wrap"
-            :class="
-              sent
-                ? 'text-white'
-                : isDark
-                  ? addressed
-                    ? 'text-grey-2'
-                    : 'text-grey-4'
-                  : 'text-grey-7'
-            "
+            :class="isDark ? (addressed ? 'text-grey-2' : 'text-grey-4') : 'text-grey-7'"
             :datetime="new Date(message.sentAt).toISOString()"
           >
             {{ formattedTime }}
           </time>
           <span
-            v-if="!sent && addressed"
+            v-if="addressed"
             class="text-caption"
             :class="isDark ? 'text-green-2' : 'text-teal-10'"
           >
             <q-icon name="alternate_email" size="13px" />pre vás
           </span>
         </header>
-        <p class="text-body1 q-mt-xs q-mb-none">
+        <p class="text-body1 q-mt-none q-mb-none">
           <template v-for="(part, index) in parts" :key="index">
             <br v-if="part === '\n'" />
             <span
@@ -55,6 +45,12 @@
             >
             <template v-else>{{ part }}</template>
           </template>
+          <time
+            v-if="sent"
+            class="text-caption text-white text-no-wrap q-ml-md"
+            :datetime="new Date(message.sentAt).toISOString()"
+            >{{ formattedTime }}</time
+          >
         </p>
       </q-card>
     </div>
@@ -74,6 +70,11 @@ const $q = useQuasar();
 const isDark = computed(() => $q.dark.isActive);
 const sent = computed(() => props.message.nickname === store.nickname);
 const addressed = computed(() => mentions(props.message.body, store.nickname));
+const bubbleColor = computed(() => {
+  if (sent.value) return isDark.value ? 'teal-10' : 'primary';
+  if (addressed.value) return isDark.value ? 'secondary' : 'green-2';
+  return isDark.value ? 'grey-9' : 'white';
+});
 const authorName = computed(
   () =>
     store.data.users.find((user) => user.nickname === props.message.nickname)?.fullName ??
@@ -89,7 +90,6 @@ const formattedTime = computed(() =>
 
 <style scoped>
 .message-bubble {
-  padding: 8px 12px;
   border-radius: 12px;
   overflow-wrap: anywhere;
 }

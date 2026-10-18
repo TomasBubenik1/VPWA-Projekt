@@ -15,6 +15,7 @@
         @create="open('create')"
         @settings="open('settings')"
         @demo="open('demo')"
+        @invite="openInvite($event)"
         @action="requestChannelAction"
       />
     </q-drawer>
@@ -23,7 +24,7 @@
         :mobile="isMobile"
         @open-sidebar="sidebarOpen = true"
         @members="open('members')"
-        @invite="open('invite')"
+        @invite="openInvite()"
         @help="open('help')"
         @leave="requestActiveChannelAction('leave')"
         @destroy="requestActiveChannelAction('destroy')"
@@ -64,7 +65,6 @@
     <q-footer class="bg-transparent" :class="isDark ? 'text-white' : 'text-dark'">
       <CommandDock
         ref="dock"
-        :mobile="isMobile"
         @members="open('members')"
         @leave="requestActiveChannelAction('leave')"
         @destroy="requestActiveChannelAction('destroy')"
@@ -73,9 +73,9 @@
       />
     </q-footer>
     <CreateChannelDialog v-model="dialogs.create" />
-    <InviteMemberDialog v-model="dialogs.invite" />
+    <InviteMemberDialog v-model="dialogs.invite" :channel-id="inviteChannelId" />
     <ChannelActionDialog v-model="dialogs.channelAction" :action="channelAction" />
-    <MembersPanel v-model="dialogs.members" :mobile="isMobile" @invite="open('invite')" />
+    <MembersPanel v-model="dialogs.members" :mobile="isMobile" @invite="openInvite()" />
     <SettingsDialog v-model="dialogs.settings" />
     <CommandHelpDialog v-model="dialogs.help" @insert="dock?.insert($event)" />
     <TypingPreviewDialog v-model="dialogs.draft" />
@@ -112,11 +112,16 @@ const isDark = computed(() => $q.dark.isActive);
 const channel = computed(() => store.activeChannel);
 const dock = ref<InstanceType<typeof CommandDock>>();
 const channelAction = ref<ChannelAction | null>(null);
+const inviteChannelId = ref<string | null>(null);
 const { sidebarOpen, dialogs, open, afterSidebarHide, reset } = useWorkspaceDialogs(isMobile);
 useWorkspaceNotifications();
 
 // QLayout supplies the live header/footer height: https://quasar.dev/layout/page
 const pageStyle = (offset: number) => ({ height: `calc(100dvh - ${offset}px)`, minHeight: '0' });
+function openInvite(id = store.activeChannelId) {
+  inviteChannelId.value = id;
+  open('invite');
+}
 function requestChannelAction(action: ChannelAction) {
   channelAction.value = action;
   open('channelAction');
@@ -129,6 +134,7 @@ watch(
   () => {
     reset();
     channelAction.value = null;
+    inviteChannelId.value = null;
   },
 );
 onMounted(() => store.expireInactiveChannels());

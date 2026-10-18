@@ -37,9 +37,9 @@
         <q-menu anchor="bottom right" self="top right">
           <q-list>
             <q-item
+              v-if="!channel?.isPrivate || isOwner"
               clickable
               v-close-popup
-              :disable="channel?.isPrivate && !isOwner"
               @click="emit('invite')"
             >
               <q-item-section avatar><q-icon name="person_add_alt" /></q-item-section>

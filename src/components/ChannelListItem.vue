@@ -29,7 +29,22 @@
         <q-menu anchor="bottom right" self="top right">
           <q-list>
             <q-item v-if="owner" dense><q-item-section>Ste správca kanála</q-item-section></q-item>
-            <q-item clickable v-close-popup @click="emit('action', 'leave')">
+            <q-item
+              v-if="!channel.isPrivate || owner"
+              clickable
+              v-close-popup
+              @click="emit('invite')"
+            >
+              <q-item-section avatar><q-icon name="person_add_alt" /></q-item-section>
+              <q-item-section>Pozvať člena</q-item-section>
+            </q-item>
+            <q-separator v-if="!channel.isPrivate || owner" />
+            <q-item
+              clickable
+              v-close-popup
+              :class="$q.dark.isActive ? 'text-red-4' : 'text-negative'"
+              @click="emit('action', 'leave')"
+            >
               <q-item-section avatar><q-icon name="logout" /></q-item-section>
               <q-item-section>Opustiť kanál</q-item-section>
             </q-item>
@@ -37,7 +52,7 @@
               v-if="owner"
               clickable
               v-close-popup
-              class="text-negative"
+              :class="$q.dark.isActive ? 'text-red-4' : 'text-negative'"
               @click="emit('action', 'destroy')"
             >
               <q-item-section avatar><q-icon name="delete_outline" /></q-item-section>
@@ -61,7 +76,7 @@ const props = defineProps<{
   joined?: boolean;
   owner?: boolean;
 }>();
-const emit = defineEmits<{ select: []; action: [kind: 'leave' | 'destroy'] }>();
+const emit = defineEmits<{ select: []; invite: []; action: [kind: 'leave' | 'destroy'] }>();
 const $q = useQuasar();
 const activeClass = computed(
   () => `${$q.dark.isActive ? 'bg-grey-9 text-grey-1' : 'bg-grey-3 text-dark'} text-weight-bold`,

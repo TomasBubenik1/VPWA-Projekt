@@ -51,6 +51,7 @@
               :active="channel.id === store.activeChannelId"
               :owner="channel.owner === store.nickname"
               @select="select(channel.id)"
+              @invite="emit('invite', channel.id)"
               @action="request($event, channel.id)"
             />
           </q-list>
@@ -123,6 +124,7 @@ const emit = defineEmits<{
   create: [];
   settings: [];
   demo: [];
+  invite: [channelId: string];
   action: [value: ChannelAction];
 }>();
 const store = usePrototypeStore();

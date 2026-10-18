@@ -47,8 +47,9 @@ import { computed, ref } from 'vue';
 import { usePrototypeStore } from '@/stores/prototype';
 
 const open = defineModel<boolean>({ required: true });
+const props = defineProps<{ channelId: string | null }>();
 const store = usePrototypeStore();
-const channel = computed(() => store.activeChannel);
+const channel = computed(() => store.channels.find((item) => item.id === props.channelId));
 const nickname = ref('');
 const error = ref('');
 // Only people who are not members yet can be invited.
@@ -64,7 +65,8 @@ function reset() {
 }
 function invite() {
   try {
-    store.inviteMember(nickname.value);
+    if (!channel.value) throw new Error('Kanál už neexistuje.');
+    store.inviteMember(nickname.value, channel.value.id);
     open.value = false;
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Pozvánku sa nepodarilo poslať.';

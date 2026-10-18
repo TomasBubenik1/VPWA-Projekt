@@ -22,7 +22,9 @@
       aria-labelledby="auth-title"
     >
       <header class="row items-center justify-between" :class="isMobile ? 'q-pa-md' : 'q-pa-lg'">
-        <div class="row items-center q-gutter-sm text-primary text-h4 text-weight-bold">
+        <div
+          class="row items-center q-gutter-sm q-ml-sm q-mt-sm text-primary text-h4 text-weight-bold"
+        >
           <q-icon name="forum" size="34px" /><span>convo</span>
         </div>
         <q-btn
