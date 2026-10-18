@@ -8,7 +8,7 @@ Klikateľný prototyp aplikácie na textovú komunikáciu podľa [zadania VPWA27
 2. **Kanály a členstvo:** zoznam, vytvorenie, verejné pripojenie, súkromné pozvánky, opustenie a zrušenie kanála.
 3. **Konverzácia a nastavenia:** správy a príkazy, adresovanie, história, notifikácie, stav používateľa, členovia a písanie.
 
-UML logický model v JPG/JPEG treba doplniť ako samostatný výstup prvej fázy.
+Logický dátový model v požadovanom formáte JPG je v [docs/data-model.jpg](docs/data-model.jpg).
 
 ## Spustenie prototypu
 
