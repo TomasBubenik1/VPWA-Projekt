@@ -10,7 +10,7 @@
       aria-label="Convo"
     >
       <q-img
-        class="fit flip-horizontal"
+        class="fit"
         fit="cover"
         :src="isDark ? authArtDark : authArtLight"
         alt=""
