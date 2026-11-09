@@ -1,0 +1,224 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{lmodern}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue!60!black}
+\newcommand{\doplnit}[1]{\par\noindent\textit{Doplniť: #1}\par}
+\newcommand{\obrazok}[3]{%
+  \IfFileExists{#1}{%
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=\linewidth,height=.72\textheight,keepaspectratio]{#1}
+      \caption{#2}\label{#3}
+    \end{figure}%
+  }{\doplnit{Pridať obrázok \texttt{#1}: #2.}}%
+}
+
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \includegraphics[width=0.28\textwidth]{assets/fiit-logo.png}\par
+  \vspace{0.5cm}
+  {\large Slovenská technická univerzita v Bratislave\par}
+  {\large Fakulta informatiky a informačných technológií\par}
+
+  \vfill
+  {\Huge\bfseries Projektová dokumentácia\par}
+  \vspace{0.7cm}
+  {\Large VPWA --- Vývoj progresívnych webových aplikácií\par}
+  \vspace{0.4cm}
+  {\large Projekt: Convo --- aplikácia na textovú komunikáciu\par}
+  \vfill
+
+  \begin{tabular}{r l}
+    \textbf{Študenti:} & Dávid Boldog, Tomáš Bubeník \\
+    \textbf{Študijná skupina:} & Štvrtok 10:00 \\
+    \textbf{Cvičiaci:} & Ing. Matúš Krajčovič \\
+    \textbf{Akademický rok:} & 2026/2027 \\
+    \textbf{Dátum:} & \today
+  \end{tabular}
+  \vspace{1cm}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{Zadanie}
+\subsection{Cieľ projektu}
+Convo je progresívna webová aplikácia na textovú komunikáciu v kanáloch.
+Vychádza zo zadania semestrálneho projektu VPWA~\cite{vpwa-zadanie}.
+\doplnit{Stručne opísať výslednú aplikáciu a jej cieľovú skupinu.}
+
+\subsection{Prípady použitia}
+Zadanie vyžaduje nasledujúcich jedenásť prípadov použitia:
+\begin{enumerate}
+  \item Registrácia, prihlásenie a odhlásenie používateľa.
+  \item Zobrazenie, vytvorenie, opustenie a zrušenie kanálov.
+  \item Odosielanie správ a príkazov cez pevne umiestnený vstup.
+  \item Správa verejných a súkromných kanálov pomocou príkazov vrátane
+        pozývania, odoberania členov a hlasovania o vylúčení.
+  \item Zrušenie vlastného členstva; odchod správcu ukončí kanál.
+  \item Adresovanie správy používateľovi pomocou zmienky.
+  \item Prezeranie úplnej histórie správ s postupným načítavaním.
+  \item Upozornenia na nové správy a voľba upozornení len na zmienky.
+  \item Zmena stavu online, nerušiť a offline.
+  \item Zobrazenie členov kanála.
+  \item Zobrazenie používateľov, ktorí píšu, a náhľad ich rozpracovaného textu.
+\end{enumerate}
+\doplnit{Pri finálnej kontrole zosúladiť opis každého prípadu s implementáciou.}
+
+\subsection{Použité technológie}
+\doplnit{Uviesť výsledné verzie Quasaru, AdonisJS, relačnej databázy a
+ďalších základných nástrojov.}
+
+\section{Architektúra aplikácie}
+\subsection{Diagram architektúry}
+\obrazok{assets/architektura.png}{Architektúra aplikácie}{fig:architektura}
+\doplnit{Vysvetliť tok požiadavky od prehliadača cez server až po databázu.
+V diagrame označiť HTTP a komunikáciu v reálnom čase. Ak jeden diagram
+nestačí, pridať ďalší.}
+
+\subsection{Klientská časť}
+\doplnit{Opísať stránky, hlavné komponenty, smerovanie, správu stavu,
+responzivitu a napojenie Quasar aplikácie na server.}
+
+\subsection{Serverová časť}
+\doplnit{Opísať rozdelenie AdonisJS aplikácie na routy, kontroléry, služby
+a modely; vysvetliť autentifikáciu a kontrolu oprávnení.}
+
+\subsection{Databáza a perzistencia}
+\doplnit{Vysvetliť, ktoré údaje sa ukladajú, ako server používa modely a
+migrácie a ktoré krátkodobé stavy zostávajú iba v pamäti.}
+
+\subsection{Komunikácia medzi klientom a serverom}
+\doplnit{Oddeliť použitie HTTP API a spojenia v reálnom čase. Uviesť hlavné
+udalosti pre správy, prítomnosť, písanie a rozpracovaný text.}
+
+\section{Fyzický dátový model}
+\subsection{Diagram modelu}
+\obrazok{assets/fyzicky-model.png}{Fyzický dátový model}{fig:fyzicky-model}
+\doplnit{Diagram vytvoriť podľa skutočných migrácií vrátane kľúčov, väzieb
+a kardinalít.}
+
+\subsection{Tabuľky, väzby a obmedzenia}
+\doplnit{Vysvetliť význam tabuliek, dôležité stĺpce, unikátne obmedzenia,
+referenčnú integritu a pravidlá mazania údajov.}
+
+\subsection{Zmeny oproti logickému návrhu}
+\doplnit{Porovnať fyzický model s logickým modelom z prvej fázy. Každú zmenu
+vecne zdôvodniť; ak zmeny nie sú, výslovne to uviesť.}
+
+\section{Realizácia funkcií}
+\subsection{Používatelia a prihlásenie}
+\doplnit{Opísať registráciu, prihlasovanie, odhlasovanie, identitu a
+užívateľské nastavenia.}
+
+\subsection{Kanály, členstvo a oprávnenia}
+\doplnit{Opísať typy kanálov, členstvo, pozvánky a príkazy
+\texttt{/join}, \texttt{/invite}, \texttt{/revoke}, \texttt{/kick},
+\texttt{/cancel}, \texttt{/quit} a \texttt{/list}. Uviesť oprávnenia správcu
+a zánik neaktívneho kanála.}
+
+\subsection{Správy, zmienky a história}
+\doplnit{Vysvetliť odoslanie správy, zmienky, ukladanie a postupné načítanie
+histórie vrátane správania pri veľkom počte správ.}
+
+\subsection{Upozornenia a stav používateľa}
+\doplnit{Opísať podmienky vystavenia upozornenia, nastavenie iba pre zmienky
+a účinok stavov online, nerušiť a offline.}
+
+\subsection{Indikácia písania}
+\doplnit{Vysvetliť zobrazenie píšucich členov a živý náhľad rozpracovaného
+textu, vrátane ukončenia alebo vypršania tohto stavu.}
+
+\section{PWA}
+\subsection{Inštalácia a manifest}
+\doplnit{Popísať manifest, ikony, režim zobrazenia a spôsob inštalácie
+aplikácie na podporovaných zariadeniach.}
+
+\subsection{Service worker a práca bez spojenia}
+\doplnit{Vysvetliť stratégiu ukladania súborov, dostupnosť aplikácie bez
+siete, správanie pri strate spojenia a opätovnú synchronizáciu.}
+
+\subsection{Aktualizácie aplikácie}
+\doplnit{Opísať, ako klient zistí a použije novú verziu aplikácie.}
+
+\section{Návrhové rozhodnutia}
+\subsection{Základné technológie a externé knižnice}
+\doplnit{Vymenovať použité knižnice mimo základného rámca a pri každej
+vysvetliť účel a dôvod výberu. Zdôvodniť aj prípadné úpravy cudzej knižnice.}
+
+\subsection{Dátové a bezpečnostné pravidlá}
+\doplnit{Zdôvodniť model členstva, pozvánok, hlasov, banov, správcovských
+oprávnení a prístup k správam.}
+
+\subsection{Výkon a správanie v reálnom čase}
+\doplnit{Zdôvodniť stránkovanie histórie, prenos udalostí, obnovu spojenia
+a spôsob aktualizácie klientského stavu.}
+
+\subsection{Obmedzenia riešenia}
+\doplnit{Uviesť iba skutočné obmedzenia finálnej verzie a ich dopad na
+používateľa. Ak žiadne významné nie sú, túto podkapitolu odstrániť.}
+
+\section{Kľúčové obrazovky}
+Vložiť najmenej päť snímok finálnej aplikácie. Pri každej uviesť stručný
+popis toho, čo používateľ na obrazovke robí. Súbory uložiť do priečinka
+\texttt{assets/}.
+
+\subsection{Prihlásenie a registrácia}
+\obrazok{assets/prihlasenie.png}{Prihlásenie a registrácia}{fig:prihlasenie}
+\doplnit{Popísať scenár na snímke.}
+
+\subsection{Kanály a pozvánky}
+\obrazok{assets/kanaly.png}{Kanály a pozvánky}{fig:kanaly}
+\doplnit{Popísať scenár na snímke.}
+
+\subsection{Konverzácia a história správ}
+\obrazok{assets/konverzacia.png}{Konverzácia a história správ}{fig:konverzacia}
+\doplnit{Popísať scenár na snímke.}
+
+\subsection{Správa členov kanála}
+\obrazok{assets/clenovia.png}{Správa členov kanála}{fig:clenovia}
+\doplnit{Popísať scenár na snímke.}
+
+\subsection{Nastavenia, stav a upozornenia}
+\obrazok{assets/nastavenia.png}{Nastavenia, stav a upozornenia}{fig:nastavenia}
+\doplnit{Popísať scenár na snímke.}
+
+\section{Spustenie a overenie}
+\subsection{Požiadavky a konfigurácia}
+\doplnit{Uviesť potrebné verzie nástrojov, príklad premenných prostredia
+bez tajných hodnôt a požiadavky na databázu.}
+
+\subsection{Inštalácia a spustenie}
+\doplnit{Zapísať presné príkazy na inštaláciu balíkov, migráciu databázy
+a spustenie klienta a servera.}
+
+\subsection{Overenie prípadov použitia}
+\doplnit{Stručne popísať, ako ste overili všetkých jedenásť prípadov
+použitia, vrátane dvoch súčasne prihlásených používateľov.}
+
+\subsection{Overenie PWA}
+\doplnit{Uviesť výsledok skúšky inštalácie, režimu bez spojenia, návratu
+online a aktualizácie aplikácie.}
+
+\begin{thebibliography}{9}
+  \bibitem{vpwa-zadanie}
+  Zadanie semestrálneho projektu VPWA.\newline
+  \url{https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md}
+
+\end{thebibliography}
+
+\end{document}
