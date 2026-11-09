@@ -9,12 +9,7 @@
       :class="isDark ? 'bg-grey-10' : 'bg-grey-3'"
       aria-label="Convo"
     >
-      <q-img
-        class="fit"
-        fit="cover"
-        :src="isDark ? authArtDark : authArtLight"
-        alt=""
-      />
+      <q-img class="fit" fit="cover" :src="isDark ? authArtDark : authArtLight" alt="" />
     </aside>
     <section
       class="col column no-wrap"

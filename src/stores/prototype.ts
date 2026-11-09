@@ -372,7 +372,7 @@ export function createPrototypeStore() {
     setStatus(state.data.statuses[account.nickname] ?? 'online');
   }
   function signIn(email: string, password: string) {
-    if (password.length < 8) throw new Error('Pre prototyp zadajte aspoň 8 znakov hesla.');
+    if (password.length < 8) throw new Error('Zadajte aspoň 8 znakov hesla.');
     const account = state.data.users.find(
       (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
     );

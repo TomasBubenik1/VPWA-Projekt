@@ -20,7 +20,7 @@ const conversation = [
   ['alex', 'Pripravím zoznam príkazov priamo v aplikácii.'],
   ['jules', 'Na prezentácii ukážme aj rozdiel medzi DND a offline.'],
   ['nina', 'A pozvánku do súkromného kanála, tú sa oplatí predviesť.'],
-  ['alex', 'Dnes sa sústreďme na posledné detaily prototypu.'],
+  ['alex', 'Dnes sa sústreďme na posledné detaily aplikácie.'],
   ['mira', 'Zjednotila som medzery a veľkosti textu. Na mobile sa to číta oveľa lepšie.'],
   ['jules', 'Dátový model prejdem poobede. Máme tam aj hlasy na vyradenie člena?'],
   ['nina', 'Áno, tri hlasy od rôznych členov. Správca môže prístup odobrať hneď.'],

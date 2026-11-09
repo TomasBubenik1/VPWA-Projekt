@@ -1,11 +1,23 @@
 {
   "name": "vpwa-projekt",
   "version": "0.0.1",
-  "description": "Convo - klikateľný prototyp tímovej komunikácie pre VPWA",
+  "description": "Convo - aplikácia na tímovú komunikáciu pre VPWA",
   "productName": "Convo",
-  "author": "David Boldog <xboldog@stuba.sk>",
+  "contributors": [
+    {
+      "name": "Dávid Boldog",
+      "email": "xboldog@stuba.sk"
+    },
+    {
+      "name": "Tomáš Bubeník",
+      "email": "xbubenik@stuba.sk"
+    }
+  ],
   "type": "module",
   "private": true,
+  "workspaces": [
+    "server"
+  ],
   "scripts": {
     "lint": "prettier --write src tests \"*.{js,ts,html,md,json}\" && eslint --fix -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
     "lint:check": "prettier --check src tests \"*.{js,ts,html,md,json}\" && eslint -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
@@ -32,7 +44,7 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "prettier": "^3.8.1",
     "vue-tsc": "^3.3.3",
-    "@types/node": "^22.19.11",
+    "@types/node": "^26.6.2",
     "@quasar/app-vite": "^3.10.0",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
@@ -48,6 +60,13 @@
     "vuejs"
   ],
   "engines": {
-    "node": ">= 26 || ^24 || ^22.12"
+    "node": ">=24"
+  },
+  "allowScripts": {
+    "@parcel/watcher": true,
+    "@swc/core": true,
+    "better-sqlite3": true,
+    "esbuild": true,
+    "fsevents": true
   }
 }

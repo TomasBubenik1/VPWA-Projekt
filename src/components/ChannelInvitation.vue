@@ -1,5 +1,10 @@
 <template>
-  <q-card flat bordered class="q-ma-xs">
+  <q-card
+    flat
+    bordered
+    class="q-ma-xs"
+    :class="$q.dark.isActive ? 'bg-grey-9 text-grey-1' : 'bg-white'"
+  >
     <q-card-section class="row no-wrap items-start q-pa-sm">
       <q-icon name="mail_outline" color="primary" size="24px" class="q-mr-sm" />
       <div class="col">

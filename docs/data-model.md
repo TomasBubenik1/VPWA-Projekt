@@ -1,6 +1,6 @@
 # Convo – logický dátový model
 
-Model pre prvú fázu podľa [zadania VPWA27](https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md#dátový-model). Zachytáva hlavné pojmy aplikácie a ich vzťahy v UML class diagrame. Databázové kľúče, typy stĺpcov a spojovacie tabuľky sa určia až pri návrhu fyzického modelu v druhej fáze.
+Logický model aplikácie podľa [zadania VPWA27](https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md#dátový-model) zachytáva hlavné pojmy a ich vzťahy v UML class diagrame. Databázové kľúče, typy stĺpcov a spojovacie tabuľky sú predmetom fyzického modelu.
 
 - [Mermaid zdroj](data-model.mmd) – možno otvoriť v [Mermaid Live Editore](https://mermaid.live/).
 - [JPG na odovzdanie](data-model.jpg).
@@ -12,7 +12,7 @@ Používateľ môže byť členom viacerých kanálov, no každý kanál má jed
 
 Stav používateľa má hodnoty `online`, `dnd`, `offline`; nastavenie upozornení má hodnoty `all`, `mentionsOnly`. Kanál je `public` alebo `private` a pozvánka je `pending`, `accepted` alebo `declined`. Tieto hodnoty sú v diagrame poznámkami, nie samostatnými tabuľkami.
 
-Verejný kanál umožňuje vstup ďalším používateľom. Po troch hlasoch členov môže byť používateľ trvalo vylúčený; správca ho môže vylúčiť priamo alebo mu obnoviť prístup. Diagram ukazuje zákaz vstupu ako vzťah používateľa a kanála. Podrobnosti hlasovania, prihlasovacích relácií a ukladania rozpracovaných správ patria do ďalšej fázy. Kanál zaniká po viac než 30 dňoch bez novej správy a jeho názov sa môže opäť použiť.
+Verejný kanál umožňuje vstup ďalším používateľom. Po troch hlasoch členov môže byť používateľ trvalo vylúčený; správca ho môže vylúčiť priamo alebo mu obnoviť prístup. Diagram ukazuje zákaz vstupu ako vzťah používateľa a kanála. Implementačné podrobnosti hlasovania, prihlasovacích relácií a rozpracovaných správ logický model nezachytáva. Kanál zaniká po viac než 30 dňoch bez novej správy a jeho názov sa môže opäť použiť.
 
 ## Obnovenie obrázkov
 

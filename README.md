@@ -1,56 +1,55 @@
 # Convo – VPWA semestrálny projekt
 
-Klikateľný prototyp aplikácie na textovú komunikáciu podľa [zadania VPWA27](https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md). Fáza 1 sa sústreďuje na responzívne používateľské rozhranie pre všetkých 11 prípadov použitia a UML návrh logického dátového modelu. Prototyp používa lokálne demo dáta.
+Convo je progresívna webová aplikácia na textovú komunikáciu v kanáloch podľa [zadania VPWA27](https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md). Autori: Dávid Boldog (`xboldog@stuba.sk`) a Tomáš Bubeník (`xbubenik@stuba.sk`).
 
-## Fáza 1 – frontendový prototyp
+## Funkcie
 
-1. **Účty a základná štruktúra:** registrácia, prihlásenie, odhlásenie a responzívny pracovný priestor.
-2. **Kanály a členstvo:** zoznam, vytvorenie, verejné pripojenie, súkromné pozvánky, opustenie a zrušenie kanála.
-3. **Konverzácia a nastavenia:** správy a príkazy, adresovanie, história, notifikácie, stav používateľa, členovia a písanie.
+- Registrácia, prihlásenie a odhlásenie používateľov.
+- Vytváranie, vyhľadávanie, opúšťanie a rušenie verejných a súkromných kanálov.
+- Prijímanie pozvánok a správa členov vrátane príkazov na pozvanie, odobratie, hlasovanie o vylúčení a obnovenie prístupu.
+- Odosielanie správ a príkazov, adresovanie používateľov pomocou `@nickname` a postupné načítavanie histórie.
+- Upozornenia na správy alebo iba na zmienky, stavy online, nerušiť a offline, zoznam členov a živý náhľad písania.
+- Inštalácia aplikácie ako PWA a používanie jej rozhrania aj bez sieťového spojenia.
 
-Logický dátový model v požadovanom formáte JPG je v [docs/data-model.jpg](docs/data-model.jpg).
+## Technológie a štruktúra
 
-## Spustenie prototypu
+Frontend používa Vue 3, Quasar a TypeScript. Serverové API a komunikáciu v reálnom čase zabezpečuje AdonisJS. Údaje sa ukladajú do SQLite. Projekt používa jeden koreňový `package-lock.json` a npm workspaces.
+
+- `src/` – obrazovky, komponenty a klientský stav.
+- `server/` – API, autentifikácia, komunikácia v reálnom čase a databázové migrácie.
+- `docs/` – [dátový model](docs/data-model.md) a projektová dokumentácia.
+- `tests/` – testy klientského správania.
+
+## Inštalácia a spustenie
+
+Potrebný je Node.js 24 alebo novší. V koreňovom priečinku nainštalujte závislosti a spustite frontend:
 
 ```bash
-npm install
-```
-
-### Start the app in development mode (HMR, error reporting, etc.)
-
-```bash
+npm ci
 npm run dev
 ```
 
-Všetky ukážkové úkony prebiehajú lokálne v prehliadači. Prihlásenie má predvyplnený demo účet. V paneli **Vyskúšať scenáre** môžete prepínať demo účty, doručovať správy, simulovať skrytú aplikáciu a spustiť živý náhľad písania. Prototyp neobsahuje serverovú autentifikáciu; heslá sa neukladajú.
+Pri prvom spustení servera vytvorte lokálnu konfiguráciu, vygenerujte kľúč a spustite migrácie. Server potom spustite v druhom termináli:
+
+```bash
+cp server/.env.example server/.env
+cd server
+node ace generate:key
+node ace migration:run
+npm run dev
+```
+
+Server počúva na `http://localhost:3333` a databázu SQLite ukladá do `server/tmp/db.sqlite3`.
 
 ## Overenie
+
+Z koreňového priečinka:
 
 ```bash
 npm run typecheck
 npm test
 npm run lint:check
 npm run build
+npm run build -w convo-server
+npm run lint -w convo-server
 ```
-
-## Technológie
-
-- Quasar, Vue 3, TypeScript
-
-## Stav prototypu
-
-Zdieľaný stav používa Vue `reactive()` bez ďalšej knižnice. Komponenty ho získajú cez
-`usePrototypeStore()`. Rovnaká inštancia zabezpečuje okamžité aktualizácie celej aplikácie.
-
-- `src/stores/prototype.ts`: reaktívny stav, účty, kanály, príkazy a demo komunikácia.
-- `src/stores/prototype-model.ts`: dátové typy, stavy používateľov a vytváranie záznamov.
-- `src/stores/prototype-demo.ts`: úvodné demo účty, kanály a správy.
-
-Ukladanie používa pôvodné kľúče a formát, takže existujúce demo dáta zostávajú dostupné.
-Testy vytvárajú samostatné inštancie cez `createPrototypeStore()` a po použití ich uvoľnia
-pomocou `dispose()`.
-
-Zachované sú scenáre 1–11 zadania: účty, zoznam a správa kanálov, správy a príkazy,
-verejné/súkromné členstvo a moderovanie, opustenie kanála, adresovanie správ, história,
-notifikácie, online/DND/offline, zoznam členov a živý náhľad písania. Pre prvú fázu ide
-o lokálnu simuláciu; backend, databáza a nasadenie PWA patria do finálnej fázy.

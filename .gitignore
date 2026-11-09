@@ -4,6 +4,8 @@ node_modules
 
 # .env files
 .env*
+!server/.env.example
+!server/.env.test
 
 # Quasar core related directories
 .quasar
