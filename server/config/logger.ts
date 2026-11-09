@@ -17,7 +17,7 @@ const loggerConfig = defineConfig({
       /**
        * Logger name shown in log records.
        */
-      name: env.get('APP_NAME'),
+      name: 'convo-server',
 
       /**
        * Minimum level to output (trace, debug, info, warn, error, fatal).

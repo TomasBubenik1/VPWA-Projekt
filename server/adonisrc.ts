@@ -45,7 +45,6 @@ export default defineConfig({
     () => import('@adonisjs/lucid/database_provider'),
     () => import('@adonisjs/cors/cors_provider'),
     () => import('@adonisjs/auth/auth_provider'),
-    () => import('#providers/api_provider'),
     {
       file: () => import('@rlanz/socket/provider'),
       environment: ['web', 'test'],
@@ -64,6 +63,10 @@ export default defineConfig({
     () => import('#start/routes'),
     () => import('#start/kernel'),
     () => import('#start/validator'),
+    {
+      file: () => import('#start/socket_connections'),
+      environment: ['web', 'test'],
+    },
   ],
 
   /*
@@ -103,11 +106,6 @@ export default defineConfig({
   metaFiles: [],
 
   hooks: {
-    init: [
-      indexEntities({
-        transformers: { enabled: true },
-      }),
-      () => import('@rlanz/socket/assembler_hook'),
-    ],
+    init: [indexEntities(), () => import('@rlanz/socket/assembler_hook')],
   },
 })
