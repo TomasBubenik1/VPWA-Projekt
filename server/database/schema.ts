@@ -8,18 +8,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export class AuthAccessTokenSchema extends BaseModel {
-  static $columns = [
-    'abilities',
-    'createdAt',
-    'expiresAt',
-    'hash',
-    'id',
-    'lastUsedAt',
-    'name',
-    'tokenableId',
-    'type',
-    'updatedAt',
-  ] as const
+  static $columns = ['abilities', 'createdAt', 'expiresAt', 'hash', 'id', 'lastUsedAt', 'name', 'tokenableId', 'type', 'updatedAt'] as const
   $columns = AuthAccessTokenSchema.$columns
   @column()
   declare abilities: string
@@ -43,19 +32,114 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class ChannelBanSchema extends BaseModel {
+  static $columns = ['channelId', 'userId'] as const
+  $columns = ChannelBanSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column()
+  declare userId: number
+}
+
+export class ChannelInvitationSchema extends BaseModel {
+  static $columns = ['channelId', 'createdAt', 'id', 'inviteeId', 'inviterId', 'status'] as const
+  $columns = ChannelInvitationSchema.$columns
+  @column()
+  declare channelId: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare inviteeId: number
+  @column()
+  declare inviterId: number
+  @column()
+  declare status: string
+}
+
+export class ChannelMembershipSchema extends BaseModel {
+  static $columns = ['channelId', 'joinedAt', 'userId'] as const
+  $columns = ChannelMembershipSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column.dateTime()
+  declare joinedAt: DateTime
+  @column()
+  declare userId: number
+}
+
+export class ChannelSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'name', 'ownerId', 'type'] as const
+  $columns = ChannelSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column()
+  declare ownerId: number
+  @column()
+  declare type: string
+}
+
+export class KickVoteSchema extends BaseModel {
+  static $columns = ['channelId', 'targetId', 'voterId'] as const
+  $columns = KickVoteSchema.$columns
+  @column({ isPrimary: true })
+  declare channelId: number
+  @column()
+  declare targetId: number
+  @column()
+  declare voterId: number
+}
+
+export class MessageMentionSchema extends BaseModel {
+  static $columns = ['messageId', 'userId'] as const
+  $columns = MessageMentionSchema.$columns
+  @column({ isPrimary: true })
+  declare messageId: number
+  @column()
+  declare userId: number
+}
+
+export class MessageSchema extends BaseModel {
+  static $columns = ['authorId', 'channelId', 'content', 'createdAt', 'id'] as const
+  $columns = MessageSchema.$columns
+  @column()
+  declare authorId: number
+  @column()
+  declare channelId: number
+  @column()
+  declare content: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+}
+
 export class UserSchema extends BaseModel {
-  static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
+  static $columns = ['createdAt', 'email', 'firstName', 'id', 'lastName', 'nickname', 'notificationMode', 'password', 'presence', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
   declare email: string
   @column()
-  declare fullName: string | null
+  declare firstName: string
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare lastName: string
+  @column()
+  declare nickname: string
+  @column()
+  declare notificationMode: string
   @column({ serializeAs: null })
   declare password: string
+  @column()
+  declare presence: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
