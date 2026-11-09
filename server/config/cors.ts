@@ -1,5 +1,16 @@
 import app from '@adonisjs/core/services/app'
+import env from '#start/env'
 import { defineConfig } from '@adonisjs/cors'
+
+/**
+ * Allowed client origins from CORS_ORIGIN (comma separated). Shared with the WebSocket config.
+ */
+export const clientOrigins =
+  env
+    .get('CORS_ORIGIN')
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? []
 
 /**
  * Configuration options to tweak the CORS policy. The following
@@ -18,7 +29,7 @@ const corsConfig = defineConfig({
    * In production, keep an explicit allowlist (empty by default, so no
    * cross-origin browser access is allowed until configured).
    */
-  origin: app.inDev ? true : [],
+  origin: app.inDev ? true : clientOrigins,
 
   /**
    * HTTP methods accepted for cross-origin requests.
