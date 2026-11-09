@@ -1,0 +1,40 @@
+---
+config:
+  theme: neutral
+---
+flowchart TB
+  subgraph Klient["Prehliadač: Quasar SPA / PWA (Vue 3, TypeScript)"]
+    direction LR
+    UI["Stránky a komponenty<br/>AuthPanel, ChannelSidebar,<br/>ChatWorkspace, CommandDock"]
+    State["Spoločný reaktívny stav<br/>účet, kanály, správy"]
+    Http["HTTP klient<br/>fetch, Bearer token"]
+    Ws["WebSocket klient<br/>@rlanz/socket/client"]
+    Vis["App Visibility<br/>a Notification API"]
+    UI --> State
+    State --> Http
+    State --> Ws
+    Ws --> Vis
+  end
+
+  subgraph Server["AdonisJS server (Node.js)"]
+    direction LR
+    Routes["start/routes.ts<br/>/api/v1"]
+    Mw["Middleware<br/>auth, activeChannels"]
+    Ctrl["Kontroléry<br/>účet, kanály, pozvánky, správy"]
+    Val["Validátory VineJS"]
+    Svc["Služby<br/>channels, socket_tickets,<br/>channel_connections"]
+    WsCh["WebSocket kanály<br/>channels/:id, users/:id"]
+    Lucid["Lucid ORM<br/>modely a query builder"]
+    Routes --> Mw --> Ctrl
+    Ctrl --> Val
+    Ctrl --> Svc
+    Ctrl --> Lucid
+    Svc --> Lucid
+    Svc -- "udalosti" --> WsCh
+  end
+
+  DB[("SQLite<br/>migrácie")]
+
+  Http -- "REST JSON" --> Routes
+  Ws <-- "WebSocket" --> WsCh
+  Lucid --> DB

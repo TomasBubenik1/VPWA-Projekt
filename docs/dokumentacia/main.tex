@@ -60,7 +60,9 @@
 \subsection{Cieľ projektu}
 Convo je progresívna webová aplikácia na textovú komunikáciu v kanáloch.
 Vychádza zo zadania semestrálneho projektu VPWA~\cite{vpwa-zadanie}.
-\doplnit{Stručne opísať výslednú aplikáciu a jej cieľovú skupinu.}
+Používateľom umožňuje vytvárať verejné a súkromné kanály, posielať správy,
+pozývať členov a sledovať ich dostupnosť. Je určená skupinám, ktoré chcú
+viesť viacero oddelených textových rozhovorov.
 
 \subsection{Prípady použitia}
 Zadanie vyžaduje nasledujúcich jedenásť prípadov použitia:
@@ -81,68 +83,195 @@ Zadanie vyžaduje nasledujúcich jedenásť prípadov použitia:
 \doplnit{Pri finálnej kontrole zosúladiť opis každého prípadu s implementáciou.}
 
 \subsection{Použité technológie}
-\doplnit{Uviesť výsledné verzie Quasaru, AdonisJS, relačnej databázy a
-ďalších základných nástrojov.}
+Server používa AdonisJS 7, TypeScript 6 a SQLite s ovládačom
+\texttt{better-sqlite3}. Klientská časť používa Vue 3 a Quasar 2.
+\doplnit{Pri odovzdaní doplniť presné nainštalované verzie a PWA technológie.}
 
 \section{Architektúra aplikácie}
 \subsection{Diagram architektúry}
-\obrazok{assets/architektura.png}{Architektúra aplikácie}{fig:architektura}
-\doplnit{Vysvetliť tok požiadavky od prehliadača cez server až po databázu.
-V diagrame označiť HTTP a komunikáciu v reálnom čase. Ak jeden diagram
-nestačí, pridať ďalší.}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth,height=.6\textheight,keepaspectratio]{assets/architektura.png}
+  \caption{Architektúra aplikácie}\label{fig:architektura}
+\end{figure}
+Prehliadač posiela požiadavky na AdonisJS API. Požiadavka prejde smerovačom,
+middleware overí prístupový token, kontrolér skontroluje vstup validátorom
+a oprávnenie pomocou služieb a cez Lucid číta alebo mení SQLite databázu.
+Po zmene služba vyšle udalosť do WebSocket kanála. Otvorené WebSocket
+spojenie tak prenáša nové správy a krátkodobé udalosti bez opakovaného
+načítavania celej stránky. Zdrojové súbory diagramov (architektúra v jazyku
+Mermaid, fyzický model ako vektorový obrázok SVG) sú v priečinku
+\texttt{docs/dokumentacia/diagramy}.
 
 \subsection{Klientská časť}
 \doplnit{Opísať stránky, hlavné komponenty, smerovanie, správu stavu,
 responzivitu a napojenie Quasar aplikácie na server.}
 
 \subsection{Serverová časť}
-\doplnit{Opísať rozdelenie AdonisJS aplikácie na routy, kontroléry, služby
-a modely; vysvetliť autentifikáciu a kontrolu oprávnení.}
+AdonisJS sprístupňuje API pod cestou \texttt{/api/v1}. Súbor
+\texttt{server/start/routes.ts} priraďuje požiadavky kontrolérom pre účty,
+kanály, pozvánky a správy. Validátory kontrolujú vstup pred zmenou databázy.
+Modely Lucid predstavujú tabuľky s vlastnou identitou a časom vzniku:
+používateľa, kanál, správu a pozvánku. Spojovacie tabuľky (členstvá, zmienky,
+hlasy, zákazy) obsahujú iba kľúče, preto s nimi server pracuje cez query
+builder. Spoločné pravidlá kanálov (kontrola členstva a zákazu, vytvorenie,
+odobratie člena spolu s jeho hlasmi, zrušenie kanála a zánik po 30 dňoch)
+sú v službe \texttt{app/services/channels.ts}, aby ich kontroléry
+a WebSocket kanál nemuseli opakovať. Pri pravidlách, ktoré menia viac
+tabuliek naraz, server používa databázové transakcie. Smerovač prijme
+v ceste iba číselné ID; iný tvar skončí odpoveďou 404 ešte pred kontrolérom.
+Autentifikácia HTTP požiadaviek používa prístupový token. Middleware povoľuje
+prácu s kanálmi a pozvánkami len prihláseným používateľom. Kontroléry ďalej
+kontrolujú členstvo a oprávnenia správcu pri každej operácii. WebSocket má
+samostatné overenie spojenia a kontrolu členstva pri odbere kanála.
+Endpointy \texttt{/auth/signup} a \texttt{/auth/login} vydávajú prístupový
+token. Skupina \texttt{/account} obsluhuje profil, nastavenia, odhlásenie
+a jednorazový WebSocket lístok. Skupina \texttt{/channels} poskytuje
+vytvorenie a vstup podľa názvu, objavenie kanálov, členov, správy,
+pozvánky a moderovanie. Skupina \texttt{/invitations} sprístupňuje
+čakajúce pozvánky a ich prijatie alebo odmietnutie.
 
 \subsection{Databáza a perzistencia}
-\doplnit{Vysvetliť, ktoré údaje sa ukladajú, ako server používa modely a
-migrácie a ktoré krátkodobé stavy zostávajú iba v pamäti.}
+SQLite uchováva účty, prístupové tokeny, kanály, členstvá, správy, zmienky,
+pozvánky, hlasy a zákazy vstupu. Schému vytvárajú migrácie v priečinku
+\texttt{server/database/migrations}. Trvalý stav sa po reštarte servera obnoví
+z databázy. Indikácia písania a obsah rozpracovanej správy sa do databázy
+neukladajú; posielajú sa len cez WebSocket. Jednorazové lístky na otvorenie
+WebSocketu sú v pamäti servera a platia 30 sekúnd.
 
 \subsection{Komunikácia medzi klientom a serverom}
-\doplnit{Oddeliť použitie HTTP API a spojenia v reálnom čase. Uviesť hlavné
-udalosti pre správy, prítomnosť, písanie a rozpracovaný text.}
+HTTP API vykonáva registráciu, prihlásenie, nastavenia, správu kanálov,
+pozvánok a správ. História správ sa číta cez HTTP po stránkach. Po zápise
+správy server vyšle udalosť \texttt{message} účastníkom príslušného kanála.
+Rovnako oznamuje zmenu členstva, zrušenie kanála a novú pozvánku. Udalosti
+\texttt{typing} a \texttt{draft} prenášajú krátkodobý stav medzi členmi
+kanála. Zmena stavu používateľa vysiela udalosť \texttt{presence}.
+Pri otvorení WebSocketu klient najprv získa cez autorizované HTTP API
+jednorazový lístok. Pri novom spojení po odpojení musí získať nový lístok.
+Odber \texttt{channels/:id} je vyhradený členom kanála a prenáša správy,
+členstvo, zrušenie kanála, písanie a rozpracovaný text. Odber
+\texttt{users/:id} je vyhradený danému používateľovi a doručuje mu
+pozvánky. Server zruší aktívny odber po odobratí člena alebo po zániku
+kanála.
+\doplnit{Doplniť konkrétne napojenie klientskych služieb na tieto udalosti.}
 
+\clearpage
 \section{Fyzický dátový model}
 \subsection{Diagram modelu}
-\obrazok{assets/fyzicky-model.png}{Fyzický dátový model}{fig:fyzicky-model}
-\doplnit{Diagram vytvoriť podľa skutočných migrácií vrátane kľúčov, väzieb
-a kardinalít.}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=\linewidth,height=.84\textheight,keepaspectratio]{assets/fyzicky-model.png}
+  \caption{Fyzický dátový model}\label{fig:fyzicky-model}
+\end{figure}
+\clearpage
 
 \subsection{Tabuľky, väzby a obmedzenia}
-\doplnit{Vysvetliť význam tabuliek, dôležité stĺpce, unikátne obmedzenia,
-referenčnú integritu a pravidlá mazania údajov.}
+\texttt{users} obsahuje meno, priezvisko, prezývku, e-mail, hash hesla,
+stav a režim upozornení. E-mail aj prezývka sú jedinečné. Validátor ich pred
+uložením prevedie na malé písmená, takže jedinečnosť platí bez ohľadu na
+veľkosť písmen aj pri obyčajnom unikátnom indexe. \texttt{auth\_access\_tokens} uchováva prístupové tokeny. Každý riadok
+v \texttt{channels} má názov, typ a správcu. Názov kanála je jedinečný
+a ukladá sa malými písmenami. \texttt{channel\_memberships} spája používateľa
+s kanálom a nepovoľuje duplicitné členstvo.
+
+\texttt{messages} patrí jednému kanálu a autorovi; tabuľka
+\texttt{message\_mentions} eviduje každého spomenutého člena najviac raz
+pre danú správu. \texttt{channel\_invitations} obsahuje odosielateľa,
+príjemcu a stav pozvánky. Dvojica kanál--príjemca je jedinečná, takže nová
+pozvánka môže aktualizovať predchádzajúcu. \texttt{kick\_votes} má zložený
+kľúč kanál--cieľ--hlasujúci; \texttt{channel\_bans} má zložený kľúč
+kanál--používateľ. Cudzie kľúče chránia väzby a pri vymazaní kanála sa
+súvisiace členstvá, správy, zmienky, pozvánky, hlasy a zákazy vymažú
+kaskádovo. Názov zrušeného kanála sa preto dá znova použiť.
 
 \subsection{Zmeny oproti logickému návrhu}
-\doplnit{Porovnať fyzický model s logickým modelom z prvej fázy. Každú zmenu
-vecne zdôvodniť; ak zmeny nie sú, výslovne to uviesť.}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{assets/logicky-model.jpg}
+  \caption{Logický dátový model z prvej fázy}\label{fig:logicky-model}
+\end{figure}
+Logický model z prvej fázy (obr.~\ref{fig:logicky-model}) zobrazoval
+používateľa, kanál, správu, pozvánku a ich vzťahy bez databázových kľúčov
+a typov. Fyzický model ich zachováva a mení iba nasledujúce:
+\begin{itemize}
+  \item Vzťahy mnoho ku mnohým \emph{je členom}, \emph{adresuje} a \emph{má
+        zákaz vstupu} sú rozložené na tabuľky \texttt{channel\_memberships},
+        \texttt{message\_mentions} a \texttt{channel\_bans}.
+  \item Pribudla tabuľka \texttt{kick\_votes}. Logický model zachytil iba
+        výsledný zákaz; na vynútenie troch rôznych hlasov treba hlasy evidovať.
+  \item Tabuľku \texttt{auth\_access\_tokens} pridáva autentifikácia AdonisJS.
+  \item Atribút \texttt{sentAt} správy a pozvánky sa volá \texttt{created\_at}
+        podľa konvencie Lucid, ktorá ho vypĺňa automaticky. Atribúty sú
+        pomenované v tvare \texttt{snake\_case}.
+\end{itemize}
+Krátkodobé písanie a rozpracovaný text zostávajú mimo fyzického modelu,
+pretože po odpojení nemajú trvať.
 
 \section{Realizácia funkcií}
 \subsection{Používatelia a prihlásenie}
-\doplnit{Opísať registráciu, prihlasovanie, odhlasovanie, identitu a
-užívateľské nastavenia.}
+Pri registrácii server kontroluje meno, priezvisko, jedinečnú prezývku,
+jedinečný e-mail a potvrdenie hesla. Heslo ukladá ako hash. Pri prihlásení overí heslo a vydá
+prístupový token; pri odhlásení token zneplatní. Endpoint
+\texttt{PATCH /api/v1/account/profile} mení stav \texttt{online},
+\texttt{dnd} alebo \texttt{offline} a režim upozornení \texttt{all} alebo
+\texttt{mentionsOnly}. Odhlásenie zruší otvorené WebSocket spojenia
+používateľa a nevydané jednorazové lístky. Voľba \texttt{offline} odpojí
+WebSocket, takže sa živé udalosti prestanú doručovať.
+\doplnit{Doplniť správanie klientskych formulárov.}
 
 \subsection{Kanály, členstvo a oprávnenia}
-\doplnit{Opísať typy kanálov, členstvo, pozvánky a príkazy
-\texttt{/join}, \texttt{/invite}, \texttt{/revoke}, \texttt{/kick},
-\texttt{/cancel}, \texttt{/quit} a \texttt{/list}. Uviesť oprávnenia správcu
-a zánik neaktívneho kanála.}
+Pri \texttt{/join} s názvom existujúceho verejného kanála server pridá
+používateľa medzi členov; ak kanál neexistuje, vytvorí ho. S voľbou
+\texttt{private} vytvorí súkromný kanál, do existujúceho súkromného kanála
+sa vstupuje iba cez pozvánku. Zoznam kanálov obsahuje iba kanály, v ktorých je
+používateľ členom; verejné kanály, do ktorých ešte nevstúpil, vracia
+samostatný endpoint na ich objavenie. Príkaz \texttt{/list} zobrazí členov
+kanála a je dostupný iba členom. Vo verejnom kanáli môže člen pozvať
+ďalšieho používateľa. V súkromnom kanáli môže pozývať a odoberať členov
+iba správca. Pozvánku môže príjemca prijať alebo odmietnuť.
+
+Vo verejnom kanáli môže člen hlasovať príkazom \texttt{/kick} za vylúčenie
+iného člena. Jeden člen má proti rovnakému cieľu najviac jeden hlas.
+Tri hlasy aktuálnych členov vytvoria zákaz vstupu; správca vylučuje
+okamžite a sám nemôže byť cieľom hlasovania. Pri odchode člena sa jeho
+prijaté aj odovzdané hlasy odstránia. Správca môže zakázanému používateľovi
+obnoviť prístup novou pozvánkou. \texttt{/cancel} odoberie vlastné členstvo,
+zatiaľ čo \texttt{/quit} zruší kanál správcu. Ak správca opustí vlastný
+kanál, kanál zanikne tiež. Kanál bez novej správy viac než 30 dní sa
+odstráni pri nasledujúcej požiadavke na kanály alebo pozvánky a jeho
+pripojení členovia dostanú udalosť \texttt{deleted}. Názov sa tým uvoľní.
+\texttt{/revoke} odoberá člena podľa prezývky rovnako ako \texttt{/invite}
+a \texttt{/kick}.
+\doplnit{Doplniť mapovanie príkazov a ponúk v klientskom rozhraní.}
 
 \subsection{Správy, zmienky a história}
-\doplnit{Vysvetliť odoslanie správy, zmienky, ukladanie a postupné načítanie
-histórie vrátane správania pri veľkom počte správ.}
+Správu môže uložiť iba člen kanála. Server z jej obsahu vyberie jedinečné
+výskyty \texttt{@prezyvka} a do \texttt{message\_mentions} uloží len
+existujúcich členov daného kanála. Správa a zmienky vznikajú v jednej
+transakcii. História sa číta od najnovších správ podľa identifikátora;
+odpoveď obsahuje najviac 30 správ, prípadne klientom zvolený limit najviac
+50, a identifikátor ďalšej stránky. Autor a zmienky sa načítajú dvomi
+hromadnými dotazmi pre celú stránku, nie zvlášť pre každú správu. Čas
+správy server posiela vo formáte ISO 8601 s časovou zónou. Nová správa sa po uložení vyšle členom
+kanála cez WebSocket. Staršie stránky sa načítajú až na požiadanie, takže
+prvé zobrazenie nemusí preniesť celú históriu.
+\doplnit{Doplniť konkrétne správanie zoznamu správ v klientovi.}
 
 \subsection{Upozornenia a stav používateľa}
-\doplnit{Opísať podmienky vystavenia upozornenia, nastavenie iba pre zmienky
-a účinok stavov online, nerušiť a offline.}
+Server ukladá režim \texttt{all} alebo \texttt{mentionsOnly} v účte
+používateľa a pri správe poskytuje zoznam adresátov zmienok. Zmenu stavu
+rozposiela ako udalosť \texttt{presence}. Pri stave \texttt{offline} odmieta
+nové WebSocket spojenie a uzatvára existujúce spojenia. Stav \texttt{dnd}
+zostáva pripojený, ale klient pri ňom nemá zobrazovať upozornenia.
+\doplnit{Doplniť klientské pravidlá viditeľnosti stránky a zobrazovania upozornení.}
 
 \subsection{Indikácia písania}
-\doplnit{Vysvetliť zobrazenie píšucich členov a živý náhľad rozpracovaného
-textu, vrátane ukončenia alebo vypršania tohto stavu.}
+WebSocket kanál prijíma od pripojeného člena udalosť \texttt{typing}
+s logickou hodnotou a udalosť \texttt{draft} s textom najviac 4000 znakov.
+Obe udalosti rozpošle ostatným odberateľom kanála. Pri opustení odberu
+server vyšle ukončenie písania a prázdny text. Tieto dáta nie sú uložené
+v databáze.
+\doplnit{Doplniť klientské oneskorenie, ukončenie a zobrazenie náhľadu.}
 
 \section{PWA}
 \subsection{Inštalácia a manifest}
@@ -158,16 +287,44 @@ siete, správanie pri strate spojenia a opätovnú synchronizáciu.}
 
 \section{Návrhové rozhodnutia}
 \subsection{Základné technológie a externé knižnice}
-\doplnit{Vymenovať použité knižnice mimo základného rámca a pri každej
-vysvetliť účel a dôvod výberu. Zdôvodniť aj prípadné úpravy cudzej knižnice.}
+Snažili sme sa pridať čo najmenej závislostí. Server používa AdonisJS 7
+na smerovanie a spracovanie HTTP požiadaviek a jeho oficiálne balíčky:
+Lucid na migrácie a prístup k databáze, \texttt{@adonisjs/auth} na
+prístupové tokeny, \texttt{@adonisjs/cors} a VineJS na kontrolu vstupu.
+SQLite je súborová relačná databáza, takže na lokálne spustenie netreba
+samostatný databázový proces. Balíček \texttt{better-sqlite3} je jej
+ovládač. Server nepoužíva SQL špecifické pre SQLite, takže prechod na
+PostgreSQL by vyžadoval iba zmenu konfigurácie a ovládača.
+
+Jedinou externou knižnicou mimo ekosystému AdonisJS je
+\texttt{@rlanz/socket}~\cite{rlanz-socket} vo verzii 0.2.4, ktorú používa
+server aj klient. AdonisJS 7 nemá oficiálny WebSocket balíček; oficiálny
+Transmit používa Server-Sent Events, ktoré prenášajú dáta iba zo servera
+ku klientovi, no udalosti \texttt{typing} a \texttt{draft} posiela klient.
+Knižnica sa integruje do AdonisJS (poskytovateľ služby, middleware kanálov,
+dekorátory správ) a jej autor je členom hlavného tímu AdonisJS. Na rozdiel
+od Socket.IO nepridáva vlastný protokol ani druhý server. Keďže ide o verziu
+pred 1.0, je pripnutá na presnú verziu. Externé knižnice neboli upravované.
+\doplnit{Doplniť klientské knižnice a knižnice PWA.}
 
 \subsection{Dátové a bezpečnostné pravidlá}
-\doplnit{Zdôvodniť model členstva, pozvánok, hlasov, banov, správcovských
-oprávnení a prístup k správam.}
+Správca je určený stĺpcom \texttt{owner\_id} v kanáli, preto sa jeho rola
+nemôže rozísť medzi záznamami členstva. Členstvo, hlas a zákaz majú
+jedinečné zložené kľúče, ktoré bránia duplicitám aj pri opakovanej
+požiadavke. Pozvánka má stav, aby sa dala znovu použiť pri obnovení
+prístupu. Prístup k správam vyžaduje členstvo pri HTTP čítaní, zápise aj
+pri prihlásení na odber WebSocket kanála. Pri odobratí člena server
+ukončí jeho aktívne spojenie. WebSocket overuje krátko platný jednorazový
+lístok vydaný až po overení prístupového tokenu; token sa neprenáša v
+adrese WebSocketu.
 
 \subsection{Výkon a správanie v reálnom čase}
-\doplnit{Zdôvodniť stránkovanie histórie, prenos udalostí, obnovu spojenia
-a spôsob aktualizácie klientského stavu.}
+Index na dvojici \texttt{channel\_id, id} umožňuje načítať staršie správy
+pomocou kurzora bez posunu cez všetky predošlé stránky. WebSocket prenáša
+iba nové správy a krátkodobé udalosti; databáza zostáva zdrojom úplnej
+histórie. Po odpojení klient potrebuje nový jednorazový lístok a po
+opätovnom pripojení môže chýbajúce správy načítať cez HTTP API.
+\doplnit{Doplniť klientský postup obnovy spojenia a aktualizácie stavu.}
 
 \subsection{Obmedzenia riešenia}
 \doplnit{Uviesť iba skutočné obmedzenia finálnej verzie a ich dopad na
@@ -200,16 +357,39 @@ popis toho, čo používateľ na obrazovke robí. Súbory uložiť do priečinka
 
 \section{Spustenie a overenie}
 \subsection{Požiadavky a konfigurácia}
-\doplnit{Uviesť potrebné verzie nástrojov, príklad premenných prostredia
-bez tajných hodnôt a požiadavky na databázu.}
+Server vyžaduje Node.js 24 alebo novší. Konfigurácia sa vytvára zo vzoru
+\texttt{.env.example} v priečinku \texttt{server}; obsahuje adresu a port servera, prostredie,
+úroveň logovania, \texttt{APP\_URL} a tajný \texttt{APP\_KEY}. Hodnotu
+\texttt{APP\_KEY} treba vygenerovať lokálne. SQLite databáza vzniká po
+spustení migrácií v priečinku \texttt{server/tmp} pod názvom
+\texttt{db.sqlite3}. Testy používajú samostatný súbor
+\texttt{test-db.sqlite3}. Po zmene migrácií počas vývoja treba lokálnu
+databázu znovu vytvoriť príkazom \texttt{node ace migration:fresh}.
+\doplnit{Doplniť konfiguráciu klienta a PWA.}
 
 \subsection{Inštalácia a spustenie}
-\doplnit{Zapísať presné príkazy na inštaláciu balíkov, migráciu databázy
-a spustenie klienta a servera.}
+Z koreňového priečinka projektu stačí nainštalovať závislosti príkazom
+\texttt{npm ci}. Pri prvom spustení sa vytvorí \texttt{server/.env}
+zo vzoru, v priečinku \texttt{server} sa vykonajú príkazy
+\texttt{node ace generate:key} a \texttt{node ace migration:run}.
+Server sa spustí príkazom \texttt{npm run dev} v priečinku \texttt{server}.
+\doplnit{Doplniť spustenie klienta a zostavenie finálnej verzie.}
 
 \subsection{Overenie prípadov použitia}
-\doplnit{Stručne popísať, ako ste overili všetkých jedenásť prípadov
-použitia, vrátane dvoch súčasne prihlásených používateľov.}
+Automatické HTTP testy (\texttt{npm test -w convo-server}) overujú
+registráciu s obsadenou prezývkou, prihlásenie, zneplatnenie tokenu po
+odhlásení, zmenu nastavení, vstup do verejného kanála, odmietnutie vstupu
+do súkromného kanála, pozvánku a odobratie člena, započítanie hlasov iba od
+aktuálnych členov, vylúčenie troma hlasmi aj okamžite správcom, obnovenie
+prístupu správcom, \texttt{/cancel} člena aj správcu, zrušenie kanála iba
+správcom, kurzorové stránkovanie so zmienkami, zánik neaktívneho kanála
+a opätovné použitie názvu po zrušení kanála. Pri skúške s dvoma
+používateľmi sa overilo doručenie správy a zmienky cez WebSocket,
+pozvánka, odmietnutie neoprávneného odberu, udalosti písania a
+rozpracovaného textu, odpojenie pri stave offline, návrat do stavu online
+a nemožnosť opätovne použiť jednorazový lístok.
+\doplnit{Po dokončení klienta doplniť prechod všetkých jedenástich prípadov
+použitia cez výsledné rozhranie.}
 
 \subsection{Overenie PWA}
 \doplnit{Uviesť výsledok skúšky inštalácie, režimu bez spojenia, návratu
@@ -219,6 +399,10 @@ online a aktualizácie aplikácie.}
   \bibitem{vpwa-zadanie}
   Zadanie semestrálneho projektu VPWA.\newline
   \url{https://github.com/kurice/vpwa27/blob/main/semestralny-projekt/readme.md}
+
+  \bibitem{rlanz-socket}
+  R. Lanz: \texttt{@rlanz/socket} -- WebSocket kanály pre AdonisJS.\newline
+  \url{https://github.com/RomainLanz/adonis-socket}
 
 \end{thebibliography}
 
