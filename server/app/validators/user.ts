@@ -1,26 +1,25 @@
+import { nickname } from '#validators/channel'
 import vine from '@vinejs/vine'
 
-/**
- * Shared rules for email and password.
- */
-const email = () => vine.string().email().maxLength(254)
+const email = () => vine.string().trim().toLowerCase().email().maxLength(254)
 const password = () => vine.string().minLength(8).maxLength(32)
+const name = () => vine.string().trim().minLength(1).maxLength(64)
 
-/**
- * Validator to use when performing self-signup
- */
 export const signupValidator = vine.create({
-  fullName: vine.string().nullable(),
+  firstName: name(),
+  lastName: name(),
+  nickname: nickname().unique({ table: 'users', column: 'nickname' }),
   email: email().unique({ table: 'users', column: 'email' }),
   password: password(),
   passwordConfirmation: password().sameAs('password'),
 })
 
-/**
- * Validator to use before validating user credentials
- * during login
- */
 export const loginValidator = vine.create({
   email: email(),
   password: vine.string(),
+})
+
+export const updateProfileValidator = vine.create({
+  presence: vine.enum(['online', 'dnd', 'offline']).optional(),
+  notificationMode: vine.enum(['all', 'mentionsOnly']).optional(),
 })
