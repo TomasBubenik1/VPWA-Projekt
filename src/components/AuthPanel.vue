@@ -147,8 +147,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
-import authArtDark from '@/assets/auth-abstract.png';
-import authArtLight from '@/assets/auth-abstract-light.png';
+import authArtDark from '@/assets/auth-abstract.webp';
+import authArtLight from '@/assets/auth-abstract-light.webp';
 import { usePrototypeStore } from '@/stores/prototype';
 const store = usePrototypeStore();
 const $q = useQuasar();
