@@ -136,7 +136,7 @@ function onEnter(event: KeyboardEvent) {
   // Do not send while an IME (for example accents) is still composing a character.
   if (event.isComposing) return;
   event.preventDefault();
-  submitCommand();
+  void submitCommand();
 }
 async function submitCommand() {
   const text = commandLine.value.trim();

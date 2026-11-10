@@ -41,6 +41,7 @@ export function createWorkspaceStore(
     /* Memory session. */
   }
   let generation = 0;
+  let realtimeVersion = 0;
   let socket: Socket | null = null;
   let connecting: Promise<void> | null = null;
   let refreshing: Promise<void> | null = null;
@@ -59,10 +60,10 @@ export function createWorkspaceStore(
     discoverChannels: [] as Channel[],
     invitations: [] as Invitation[],
     activeChannelId: null as number | null,
-    drafts: {} as Record<string, string>,
-    liveDrafts: {} as Record<string, LiveDraft>,
+    drafts: {},
+    liveDrafts: {},
     feedback: '',
-    connection: 'disconnected' as 'disconnected' | 'connecting' | 'connected',
+    connection: 'disconnected',
     networkOnline: typeof navigator === 'undefined' || navigator.onLine,
     get sessionId(): number | null {
       return state.user?.id ?? null;
@@ -107,6 +108,7 @@ export function createWorkspaceStore(
     }
   }
   function stopRealtime() {
+    realtimeVersion++;
     clearTimeout(retryTimer);
     clearTimeout(draftTimer);
     clearTimeout(idleTimer);
@@ -163,11 +165,11 @@ export function createWorkspaceStore(
     const members = await api<Member[]>(`/channels/${id}/members`);
     if (version === generation && state.joinedChannels.includes(channel)) channel.members = members;
   }
-  async function loadHistory(id: number, older = false) {
+  async function loadHistory(id: number, older = false, knownLatest?: number) {
     const channel = requireChannel(id);
     if (channel.loading || (older && (!channel.loaded || channel.nextCursor === null))) return;
     const version = generation;
-    const boundary = channel.messages.at(-1)?.id;
+    const boundary = knownLatest ?? channel.messages.at(-1)?.id;
     channel.loading = true;
     channel.historyError = '';
     try {
@@ -465,6 +467,7 @@ export function createWorkspaceStore(
       !state.user ||
       state.status === 'offline' ||
       !state.networkOnline ||
+      socket?.connected ||
       retryTimer
     )
       return;
@@ -486,12 +489,13 @@ export function createWorkspaceStore(
       return;
     if (connecting) return connecting;
     const version = generation;
+    const attempt = realtimeVersion;
     const job = (async () => {
       state.connection = 'connecting';
       try {
         // Refresh profile before each ticket: another tab may have chosen offline.
         const user = await api<User>('/account/profile');
-        if (version !== generation) return;
+        if (version !== generation || attempt !== realtimeVersion) return;
         state.user = user;
         if (user.presence === 'offline') {
           stopRealtime();
@@ -499,7 +503,11 @@ export function createWorkspaceStore(
         }
         await refresh();
         const { ticket } = await api<{ ticket: string }>('/account/socket-ticket', 'POST');
-        if (version !== generation || state.status === 'offline') return;
+        if (version !== generation || attempt !== realtimeVersion || state.status === 'offline')
+          return;
+        const boundaries = new Map(
+          state.joinedChannels.map((channel) => [channel.id, channel.messages.at(-1)?.id]),
+        );
         const origin = new URL(
           baseUrl,
           typeof location === 'undefined' ? 'http://localhost:3333' : location.href,
@@ -541,7 +549,7 @@ export function createWorkspaceStore(
           return;
         }
         await connection
-          .channel(`users/${state.user!.id}`)
+          .channel(`users/${state.user.id}`)
           .listen('invitation', () => {
             void refresh().catch(report);
           })
@@ -549,12 +557,15 @@ export function createWorkspaceStore(
         await syncSubscriptions();
         // Subscribe first, then recover HTTP history, closing the reconnect race.
         await Promise.all(
-          state.joinedChannels.flatMap((c) => [loadMembers(c.id), loadHistory(c.id)]),
+          state.joinedChannels.flatMap((c) => [
+            loadMembers(c.id),
+            loadHistory(c.id, false, boundaries.get(c.id)),
+          ]),
         );
         retryDelay = 1000;
         state.connection = 'connected';
       } catch (error) {
-        if (version !== generation) return;
+        if (version !== generation || attempt !== realtimeVersion) return;
         stopRealtime();
         report(error);
         scheduleReconnect();
@@ -565,6 +576,7 @@ export function createWorkspaceStore(
       await job;
     } finally {
       if (connecting === job) connecting = null;
+      if (version === generation) scheduleReconnect();
     }
   }
   function publishDraft(id: number, content: string) {
@@ -609,6 +621,11 @@ export function createWorkspaceStore(
     for (const [key, draft] of Object.entries(state.liveDrafts))
       if (Date.now() - draft.updatedAt > 10000) delete state.liveDrafts[key];
   }, 2000);
+  // Discovery changes and declined/deleted invitations have no dedicated global event.
+  const refreshTimer = setInterval(() => {
+    if (state.user && state.status !== 'offline' && state.networkOnline)
+      void refresh().catch(report);
+  }, 15000);
   if (typeof window !== 'undefined') {
     window.addEventListener('online', online);
     window.addEventListener('offline', offline);
@@ -617,6 +634,7 @@ export function createWorkspaceStore(
     disposed = true;
     clearSession();
     clearInterval(expiryTimer);
+    clearInterval(refreshTimer);
     incoming.clear();
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', online);
@@ -654,5 +672,7 @@ export function createWorkspaceStore(
 }
 let sharedStore: ReturnType<typeof createWorkspaceStore> | undefined;
 export function useWorkspaceStore() {
-  return (sharedStore ??= createWorkspaceStore());
+  return (sharedStore ??= createWorkspaceStore({
+    baseUrl: import.meta.env?.QCLI_API_URL || '/api/v1',
+  }));
 }

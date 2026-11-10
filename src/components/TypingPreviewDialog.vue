@@ -14,13 +14,17 @@
       </q-card-section>
       <q-card-section>
         <q-banner
+          v-for="draft in store.typingUsers"
+          :key="draft.userId"
           dense
           class="q-mt-sm"
           :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-2'"
           aria-live="polite"
         >
-          {{ store.typing?.body ?? 'Používateľ práve nepíše.' }}
+          <strong>@{{ draft.nickname }}</strong>
+          <div class="draft-preview">{{ draft.body || 'Používateľ píše…' }}</div>
         </q-banner>
+        <p v-if="!store.typingUsers.length" aria-live="polite">Používatelia práve nepíšu.</p>
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -33,3 +37,9 @@ import { useWorkspaceStore } from '@/stores/workspace';
 const open = defineModel<boolean>({ required: true });
 const store = useWorkspaceStore();
 </script>
+<style scoped>
+.draft-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+</style>

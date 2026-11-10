@@ -1,49 +1,63 @@
 import { onScopeDispose, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
+import { shouldNotify } from '@/services/notifications';
 
 export function useWorkspaceNotifications() {
   const $q = useQuasar();
-  const store = usePrototypeStore();
+  const store = useWorkspaceStore();
   const dismissals = new Set<() => void>();
-
-  function notify(message: string, caption?: string) {
-    const textColor = $q.dark.isActive ? 'white' : 'dark';
-    const dismiss = $q.notify({
-      message,
-      ...(caption === undefined ? {} : { caption }),
-      icon: caption === undefined ? 'info_outline' : 'chat_bubble_outline',
-      position: caption === undefined ? 'bottom' : 'top-right',
-      timeout: 6500,
-      color: $q.dark.isActive ? 'grey-9' : 'grey-2',
-      textColor,
-      actions: [{ icon: 'close', color: textColor, 'aria-label': 'Zavrieť upozornenie' }],
-      onDismiss: () => dismissals.delete(dismiss),
-    });
-    dismissals.add(dismiss);
-  }
+  const notifications = new Set<Notification>();
   function clear() {
     dismissals.forEach((dismiss) => dismiss());
     dismissals.clear();
+    notifications.forEach((notification) => notification.close());
+    notifications.clear();
   }
   watch(() => store.sessionId, clear);
-  onScopeDispose(clear);
   watch(
     () => store.feedback,
     (message) => {
       if (!message) return;
-      notify(message);
+      const dismiss = $q.notify({
+        message,
+        icon: 'info_outline',
+        position: 'bottom',
+        timeout: 6500,
+        color: $q.dark.isActive ? 'grey-9' : 'grey-2',
+        textColor: $q.dark.isActive ? 'white' : 'dark',
+        onDismiss: () => dismissals.delete(dismiss),
+      });
+      dismissals.add(dismiss);
       store.feedback = '';
     },
   );
-  watch(
-    () => store.notices[0]?.id,
-    (id) => {
-      if (!id) return;
-      const notice = store.notices[0];
-      if (!notice) return;
-      const channel = store.channels.find((item) => item.id === notice.channelId);
-      notify(channel ? `@${notice.from} · #${channel.name}` : `@${notice.from}`, notice.body);
-    },
-  );
+  const unsubscribe = store.onIncoming((message) => {
+    if (
+      !shouldNotify(store.user, message, $q.appVisible) ||
+      typeof Notification === 'undefined' ||
+      Notification.permission !== 'granted'
+    )
+      return;
+    const channel = store.joinedChannels.find((c) => c.id === message.channelId);
+    try {
+      const notification = new Notification(
+        `@${message.authorNickname} · #${channel?.name ?? ''}`,
+        { body: message.content.slice(0, 120), tag: `convo-${message.id}` },
+      );
+      notifications.add(notification);
+      notification.onclose = () => notifications.delete(notification);
+      notification.onclick = () => {
+        window.focus();
+        void store.selectChannel(message.channelId).catch(store.report);
+        notification.close();
+      };
+    } catch {
+      /* Some mobile browsers require the later PWA service worker. */
+    }
+  });
+  onScopeDispose(() => {
+    unsubscribe();
+    clear();
+  });
 }

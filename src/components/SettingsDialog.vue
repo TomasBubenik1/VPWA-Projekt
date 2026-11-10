@@ -32,6 +32,15 @@
             label="Iba správy adresované mne"
             color="primary"
           />
+          <p class="text-caption q-mt-sm q-mb-none" role="status">{{ notificationHelp }}</p>
+          <q-btn
+            v-if="permission === 'default'"
+            flat
+            no-caps
+            color="primary"
+            label="Povoliť systémové upozornenia"
+            @click="requestNotifications"
+          />
         </section>
         <q-separator class="q-my-md" />
         <section>
@@ -70,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import ConfirmationDialog from './ConfirmationDialog.vue';
 import type { Presence } from '@/stores/workspace';
@@ -81,6 +90,28 @@ const open = defineModel<boolean>({ required: true });
 const store = useWorkspaceStore();
 const $q = useQuasar();
 const signOutOpen = ref(false);
+const permission = ref(
+  typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+);
+const notificationHelp = computed(() =>
+  permission.value === 'granted'
+    ? 'Systémové upozornenia sú povolené pre skrytú aplikáciu.'
+    : permission.value === 'denied'
+      ? 'Upozornenia sú blokované. Povolenie môžete zmeniť v nastaveniach prehliadača.'
+      : permission.value === 'unsupported'
+        ? 'Tento prehliadač nepodporuje desktopové systémové upozornenia.'
+        : 'Pre upozornenia pri skrytej karte povoľte systémové upozornenia.',
+);
+watch(open, () => {
+  permission.value = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+});
+async function requestNotifications() {
+  try {
+    permission.value = await Notification.requestPermission();
+  } catch {
+    permission.value = 'unsupported';
+  }
+}
 async function setStatus(value: Presence) {
   try {
     await store.setStatus(value);
