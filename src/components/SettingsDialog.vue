@@ -12,6 +12,7 @@
           <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Dostupnosť</h3>
           <q-btn-toggle
             :model-value="store.status"
+            :disable="store.savingProfile"
             spread
             no-caps
             unelevated
@@ -28,6 +29,7 @@
           <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Upozornenia</h3>
           <q-toggle
             :model-value="store.directOnly"
+            :disable="store.savingProfile"
             @update:model-value="setDirectOnly"
             label="Iba správy adresované mne"
             color="primary"

@@ -52,6 +52,8 @@ export function createWorkspaceStore(
   let disposed = false;
   const subscriptions = new Set<number>();
   const incoming = new Set<(message: Message) => void>();
+  const drafts: Record<string, string> = {};
+  const liveDrafts: Record<string, LiveDraft> = {};
   const state = reactive({
     user: null as User | null,
     initializing: true,
@@ -60,11 +62,12 @@ export function createWorkspaceStore(
     discoverChannels: [] as Channel[],
     invitations: [] as Invitation[],
     activeChannelId: null as number | null,
-    drafts: {},
-    liveDrafts: {},
+    drafts,
+    liveDrafts,
     feedback: '',
+    savingProfile: false,
     connection: 'disconnected',
-    networkOnline: typeof navigator === 'undefined' || navigator.onLine,
+    networkOnline: typeof navigator === 'undefined' || navigator.onLine !== false,
     get sessionId(): number | null {
       return state.user?.id ?? null;
     },
@@ -132,6 +135,7 @@ export function createWorkspaceStore(
     state.drafts = {};
     state.initializationError = '';
     state.feedback = '';
+    state.savingProfile = false;
     refreshing = null;
     connecting = null;
   }
@@ -283,16 +287,33 @@ export function createWorkspaceStore(
     }
   }
   async function setStatus(presence: Presence) {
-    const previous = state.status;
-    state.user = await api<User>('/account/profile', 'PATCH', { presence });
-    if (presence === 'offline') stopRealtime();
-    else if (previous === 'offline' || !socket?.connected) {
-      await refresh();
-      void connectRealtime();
+    if (state.savingProfile) return;
+    const version = generation;
+    state.savingProfile = true;
+    try {
+      const previous = state.status;
+      const user = await api<User>('/account/profile', 'PATCH', { presence });
+      if (version !== generation) return;
+      state.user = user;
+      if (presence === 'offline') stopRealtime();
+      else if (previous === 'offline' || !socket?.connected) {
+        await refresh();
+        void connectRealtime();
+      }
+    } finally {
+      if (version === generation) state.savingProfile = false;
     }
   }
   async function setNotificationMode(notificationMode: NotificationMode) {
-    state.user = await api<User>('/account/profile', 'PATCH', { notificationMode });
+    if (state.savingProfile) return;
+    const version = generation;
+    state.savingProfile = true;
+    try {
+      const user = await api<User>('/account/profile', 'PATCH', { notificationMode });
+      if (version === generation) state.user = user;
+    } finally {
+      if (version === generation) state.savingProfile = false;
+    }
   }
   async function createChannel(name: string, isPrivate = false) {
     const channel = await api<ChannelPayload>('/channels', 'POST', {
@@ -521,7 +542,7 @@ export function createWorkspaceStore(
         socket = connection;
         connection.onStateChange((value) => {
           if (socket !== connection) return;
-          state.connection = value;
+          state.connection = value === 'connected' ? 'connecting' : value;
           if (value === 'disconnected') {
             socket = null;
             subscriptions.clear();
@@ -562,6 +583,7 @@ export function createWorkspaceStore(
             loadHistory(c.id, false, boundaries.get(c.id)),
           ]),
         );
+        if (version !== generation || socket !== connection || attempt !== realtimeVersion) return;
         retryDelay = 1000;
         state.connection = 'connected';
       } catch (error) {
