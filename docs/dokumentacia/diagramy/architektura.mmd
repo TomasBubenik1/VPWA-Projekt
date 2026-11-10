@@ -3,11 +3,11 @@ config:
   theme: neutral
 ---
 flowchart TB
-  subgraph Klient["Prehliadač: Quasar SPA / PWA (Vue 3, TypeScript)"]
+  subgraph Klient["Prehliadač: Quasar SPA (Vue 3, TypeScript)"]
     direction LR
     UI["Stránky a komponenty<br/>AuthPanel, ChannelSidebar,<br/>ChatWorkspace, CommandDock"]
-    State["Spoločný reaktívny stav<br/>účet, kanály, správy"]
-    Http["HTTP klient<br/>fetch, Bearer token"]
+    State["workspace.ts: reaktívny stav<br/>účet, kanály, správy"]
+    Http["api.ts: HTTP klient<br/>fetch, Bearer token"]
     Ws["WebSocket klient<br/>@rlanz/socket/client"]
     Vis["App Visibility<br/>a Notification API"]
     UI --> State

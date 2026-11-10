@@ -80,12 +80,14 @@ Zadanie vyžaduje nasledujúcich jedenásť prípadov použitia:
   \item Zobrazenie členov kanála.
   \item Zobrazenie používateľov, ktorí píšu, a náhľad ich rozpracovaného textu.
 \end{enumerate}
-\doplnit{Pri finálnej kontrole zosúladiť opis každého prípadu s implementáciou.}
+Klientská implementácia týchto prípadov používa skutočné serverové dáta.
+Automatické overenie a zostávajúce manuálne skúšky sú oddelené v závere dokumentu.
 
 \subsection{Použité technológie}
 Server používa AdonisJS 7, TypeScript 6 a SQLite s ovládačom
 \texttt{better-sqlite3}. Klientská časť používa Vue 3 a Quasar 2.
-\doplnit{Pri odovzdaní doplniť presné nainštalované verzie a PWA technológie.}
+Overená inštalácia používa Vue 3.5, Quasar 2.33.1, Quasar App Vite 3.10.0
+a \texttt{@rlanz/socket} 0.2.4. PWA technológie pribudnú až po potvrdení rozsahu.
 
 \section{Architektúra aplikácie}
 \subsection{Diagram architektúry}
@@ -104,8 +106,28 @@ Mermaid, fyzický model ako vektorový obrázok SVG) sú v priečinku
 \texttt{docs/dokumentacia/diagramy}.
 
 \subsection{Klientská časť}
-\doplnit{Opísať stránky, hlavné komponenty, smerovanie, správu stavu,
-responzivitu a napojenie Quasar aplikácie na server.}
+Klient je Quasar SPA s Vue 3 a TypeScriptom. Smerovač používa hash režim;
+\texttt{IndexPage} pri obnovení najprv načíta profil. Potom zobrazí
+\texttt{AuthPanel} alebo \texttt{ChatWorkspace}. Chyba spojenia pri obnove
+má samostatnú obrazovku s opakovaním požiadavky. \texttt{ChannelSidebar}
+zobrazuje navrchu pozvánky, potom vlastné a objavené kanály.
+\texttt{ConversationHeader}, \texttt{MessageHistory} a pevný
+\texttt{CommandDock} tvoria konverzáciu. Dialógy obsluhujú kanály,
+pozvanie, členov, nastavenia a potvrdenie deštruktívnych akcií.
+
+Spoločný reaktívny stav je v \texttt{src/stores/workspace.ts}; používa
+Vue \texttt{reactive} bez ďalšej knižnice na správu stavu. Typy v
+\texttt{models.ts} zodpovedajú číselným ID a poliam servera. Účty,
+členstvá a správy sa získavajú zo servera. \texttt{sessionStorage}
+obsahuje len prístupový token, \texttt{localStorage} iba voľbu motívu.
+Heslá sa neukladajú. Rozpísaný text je pre každý kanál len v pamäti.
+Odhlásenie a odpoveď 401 vyčistia token, dáta, drafty aj socket.
+
+Pri šírke najviac 700 px sa navigácia zmení na výsuvný panel.
+Pred otvorením mobilného dialógu sa najprv dokončí zatvorenie panelu.
+Výška konverzácie vychádza zo skutočnej výšky hlavičky a editora Quasar
+layoutu. Svetlý, tmavý a systémový motív využívajú Quasar Dark.
+Vizuálna kontrola oboch motívov a mobilnej šírky zatiaľ nie je vykonaná.
 
 \subsection{Serverová časť}
 AdonisJS sprístupňuje API pod cestou \texttt{/api/v1}. Súbor
@@ -153,7 +175,15 @@ Odber \texttt{channels/:id} je vyhradený členom kanála a prenáša správy,
 \texttt{users/:id} je vyhradený danému používateľovi a doručuje mu
 pozvánky. Server zruší aktívny odber po odobratí člena alebo po zániku
 kanála.
-\doplnit{Doplniť konkrétne napojenie klientskych služieb na tieto udalosti.}
+Spoločný HTTP klient \texttt{src/services/api.ts} používa \texttt{fetch},
+hlavičku Bearer, časový limit 15 sekúnd a spracovanie odpovedí 204,
+validačných chýb a vypršania relácie. Store vytvára Socket s
+\texttt{autoReconnect: false}. Odoberá osobný kanál a všetky členské
+kanály, aj keď nie sú otvorené. Udalosť správy doplní správny zoznam;
+zmena členstva, zrušenie alebo pozvánka obnovia zoznamy cez HTTP.
+Členovia sa aktualizujú pri otvorení kanála a pri obnove spojenia.
+Neoznamované zmeny objavených kanálov a pozvánok sa obnovujú každých
+15 sekúnd. Udalosť presence aktualizuje dostupnosť členov.
 
 \clearpage
 \section{Fyzický dátový model}
@@ -169,7 +199,9 @@ kanála.
 \texttt{users} obsahuje meno, priezvisko, prezývku, e-mail, hash hesla,
 stav a režim upozornení. E-mail aj prezývka sú jedinečné. Validátor ich pred
 uložením prevedie na malé písmená, takže jedinečnosť platí bez ohľadu na
-veľkosť písmen aj pri obyčajnom unikátnom indexe. \texttt{auth\_access\_tokens} uchováva prístupové tokeny. Každý riadok
+veľkosť písmen aj pri obyčajnom unikátnom indexe.
+
+\texttt{auth\_access\_tokens} uchováva prístupové tokeny. Každý riadok
 v \texttt{channels} má názov, typ a správcu. Názov kanála je jedinečný
 a ukladá sa malými písmenami. \texttt{channel\_memberships} spája používateľa
 s kanálom a nepovoľuje duplicitné členstvo.
@@ -217,7 +249,13 @@ prístupový token; pri odhlásení token zneplatní. Endpoint
 \texttt{mentionsOnly}. Odhlásenie zruší otvorené WebSocket spojenia
 používateľa a nevydané jednorazové lístky. Voľba \texttt{offline} odpojí
 WebSocket, takže sa živé udalosti prestanú doručovať.
-\doplnit{Doplniť správanie klientskych formulárov.}
+Registračný formulár má samostatné meno a priezvisko, prezývku,
+e-mail, heslo a potvrdenie. Prihlásenie nemá predvyplnené demo údaje.
+Formulár čaká na HTTP odpoveď; chyba sa zobrazí bez straty vstupov.
+Po autentifikácii klient načíta profil a zoznamy. Pri obnovení stránky
+použije token z relácie a overí profil na serveri. Nastavenia dostupnosti
+a filtra upozornení sa ukladajú PATCH požiadavkou; počas ukladania sú
+ovládacie prvky zablokované proti súbežným zmenám.
 
 \subsection{Kanály, členstvo a oprávnenia}
 Pri \texttt{/join} s názvom existujúceho verejného kanála server pridá
@@ -242,7 +280,16 @@ odstráni pri nasledujúcej požiadavke na kanály alebo pozvánky a jeho
 pripojení členovia dostanú udalosť \texttt{deleted}. Názov sa tým uvoľní.
 \texttt{/revoke} odoberá člena podľa prezývky rovnako ako \texttt{/invite}
 a \texttt{/kick}.
-\doplnit{Doplniť mapovanie príkazov a ponúk v klientskom rozhraní.}
+Ponuky a príkazy volajú rovnaké metódy store. \texttt{/join} používa
+vstup podľa názvu, \texttt{/invite} posiela prezývku, \texttt{/revoke}
+ju vkladá do cesty DELETE požiadavky a \texttt{/kick} ju posiela na
+endpoint hlasovania. \texttt{/list} načíta členov. \texttt{/cancel},
+\texttt{/quit}, \texttt{/kick} a \texttt{/revoke} čakajú na potvrdenie
+pred zápisom na server. Dialóg uchová pôvodné ID cieľového kanála.
+Pozvanie používa voľné zadanie prezývky, pretože API neposkytuje zoznam
+všetkých účtov. Prijatie a odmietnutie používa ID pozvánky, ktoré sa
+líši od ID kanála. Klient nesľubuje odvolanie čakajúcej pozvánky cez
+\texttt{/revoke}. Zoznam členov zobrazuje iba dáta poskytované API.
 
 \subsection{Správy, zmienky a história}
 Správu môže uložiť iba člen kanála. Server z jej obsahu vyberie jedinečné
@@ -255,7 +302,17 @@ hromadnými dotazmi pre celú stránku, nie zvlášť pre každú správu. Čas
 správy server posiela vo formáte ISO 8601 s časovou zónou. Nová správa sa po uložení vyšle členom
 kanála cez WebSocket. Staršie stránky sa načítajú až na požiadanie, takže
 prvé zobrazenie nemusí preniesť celú históriu.
-\doplnit{Doplniť konkrétne správanie zoznamu správ v klientovi.}
+\texttt{MessageHistory} používa reverzné načítavanie Quasar Infinite
+Scroll. Ďalšiu HTTP stránku žiada s parametrom \texttt{before} podľa
+serverového kurzora; pri hodnote null skončí. Správy sa zlúčia podľa
+číselného ID a zoradia, takže rovnaká správa z HTTP a WebSocketu
+nevznikne dvakrát. Pridanie staršej stránky nemení poslednú správu
+a nemá spustiť posun nadol; nové správy sa sledujú iba na konci alebo
+pri vlastnej správe, inak sa zobrazí tlačidlo nových správ. Zachovanie
+polohy pri načítaní treba ešte overiť v prehliadači.
+\texttt{ChatMessage} používa meno autora, ISO čas a serverové pole
+mentions na zvýraznenie adresovanej správy. Neodoslaný text sa vymaže
+až po úspechu; text zmenený počas požiadavky zostane zachovaný.
 
 \subsection{Upozornenia a stav používateľa}
 Server ukladá režim \texttt{all} alebo \texttt{mentionsOnly} v účte
@@ -263,7 +320,15 @@ používateľa a pri správe poskytuje zoznam adresátov zmienok. Zmenu stavu
 rozposiela ako udalosť \texttt{presence}. Pri stave \texttt{offline} odmieta
 nové WebSocket spojenie a uzatvára existujúce spojenia. Stav \texttt{dnd}
 zostáva pripojený, ale klient pri ňom nemá zobrazovať upozornenia.
-\doplnit{Doplniť klientské pravidlá viditeľnosti stránky a zobrazovania upozornení.}
+Quasar AppVisibility poskytuje viditeľnosť aplikácie. Composable
+\texttt{useWorkspaceNotifications} reaguje iba na nové živé správy,
+nie na historické HTTP stránky. Upozornenie vyžaduje skrytú aplikáciu,
+iného autora, stav online a povolený filter podľa serverových zmienok.
+Desktopové Notification API zobrazí prezývku autora, kanál a úryvok
+najviac 120 znakov. Kliknutie otvorí príslušný kanál. Povolenie žiada
+až používateľ tlačidlom v nastaveniach; zamietnutie a nepodporovaný
+prehliadač majú vysvetlenie. Skutočné systémové upozornenie zatiaľ
+nebolo vizuálne overené. Mobilná podpora cez service worker je odložená.
 
 \subsection{Indikácia písania}
 WebSocket kanál prijíma od pripojeného člena udalosť \texttt{typing}
@@ -271,19 +336,30 @@ s logickou hodnotou a udalosť \texttt{draft} s textom najviac 4000 znakov.
 Obe udalosti rozpošle ostatným odberateľom kanála. Pri opustení odberu
 server vyšle ukončenie písania a prázdny text. Tieto dáta nie sú uložené
 v databáze.
-\doplnit{Doplniť klientské oneskorenie, ukončenie a zobrazenie náhľadu.}
+Editor po 180 ms od poslednej zmeny odošle typing a draft aktívnemu
+kanálu. Príkazy sa ako draft neposielajú. Po piatich sekundách bez
+vstupu, pri prepnutí kanála a odoslaní klient vyšle prázdny draft
+a ukončenie písania. Prijatý stav má záznam pre každého používateľa;
+po desiatich sekundách bez aktualizácie sa zahodí. Dialóg zobrazí
+rozpracované texty všetkých práve píšucich členov otvoreného kanála.
+Odpojenie, offline a odhlásenie vyčistia prijatý stav. Žiadna z týchto
+udalostí nevolá endpoint na uloženie správy.
 
 \section{PWA}
 \subsection{Inštalácia a manifest}
-\doplnit{Popísať manifest, ikony, režim zobrazenia a spôsob inštalácie
-aplikácie na podporovaných zariadeniach.}
+PWA režim ani manifest zatiaľ nie sú pridané. Podľa dohodnutého poradia
+sa budú implementovať až po prvej prezentácii a potvrdení rozsahu.
 
 \subsection{Service worker a práca bez spojenia}
-\doplnit{Vysvetliť stratégiu ukladania súborov, dostupnosť aplikácie bez
-siete, správanie pri strate spojenia a opätovnú synchronizáciu.}
+Service worker ani offline cache zatiaľ neexistujú. Používateľská
+voľba offline odpojí iba WebSocket a nenahrádza fungovanie PWA bez siete.
+Aktuálny klient rozlišuje výpadok siete, zachová neodoslaný text v pamäti
+a po návrate siete overí profil a obnoví dáta. Rozsah trvalej offline
+dostupnosti určí konzultácia.
 
 \subsection{Aktualizácie aplikácie}
-\doplnit{Opísať, ako klient zistí a použije novú verziu aplikácie.}
+Aktualizácia nainštalovanej PWA ešte nie je implementovaná ani overená.
+Je súčasťou druhej etapy.
 
 \section{Návrhové rozhodnutia}
 \subsection{Základné technológie a externé knižnice}
@@ -305,7 +381,11 @@ Knižnica sa integruje do AdonisJS (poskytovateľ služby, middleware kanálov,
 dekorátory správ) a jej autor je členom hlavného tímu AdonisJS. Na rozdiel
 od Socket.IO nepridáva vlastný protokol ani druhý server. Keďže ide o verziu
 pred 1.0, je pripnutá na presnú verziu. Externé knižnice neboli upravované.
-\doplnit{Doplniť klientské knižnice a knižnice PWA.}
+Vue poskytuje reaktivitu a composables, Vue Router smerovanie a Quasar
+layout, dialógy, formuláre, nekonečný zoznam a indikáciu viditeľnosti.
+HTTP používa štandardné fetch bez ďalšieho klienta. Realtime používa
+rovnakú pripnutú knižnicu Socket ako server. Notification API je
+štandard prehliadača. Nové klientské ani PWA závislosti neboli pridané.
 
 \subsection{Dátové a bezpečnostné pravidlá}
 Správca je určený stĺpcom \texttt{owner\_id} v kanáli, preto sa jeho rola
@@ -324,16 +404,30 @@ pomocou kurzora bez posunu cez všetky predošlé stránky. WebSocket prenáša
 iba nové správy a krátkodobé udalosti; databáza zostáva zdrojom úplnej
 histórie. Po odpojení klient potrebuje nový jednorazový lístok a po
 opätovnom pripojení môže chýbajúce správy načítať cez HTTP API.
-\doplnit{Doplniť klientský postup obnovy spojenia a aktualizácie stavu.}
+Klient pri každom pokuse overí profil, obnoví členstvá, získa nový
+jednorazový lístok a vytvorí nový Socket. Odbery obnoví pred dočítaním
+histórie, čím pokryje medzeru medzi HTTP a živými udalosťami. História
+sa dočíta po stránkach až k poslednému známemu ID, aj keď zmeškané správy
+presiahnu jednu stránku. Hranica sa zachytí pred odbermi, aby nová živá
+správa nezakryla medzeru. Stav pripojené sa ukáže až po synchronizácii.
+Opakovanie začína po jednej sekunde a rastie najviac na 15 sekúnd.
+Pri offline alebo nedostupnej sieti sa nepokúša pripájať. Návrat zo
+zvoleného offline najprv uloží online, až potom žiada nový lístok.
 
 \subsection{Obmedzenia riešenia}
-\doplnit{Uviesť iba skutočné obmedzenia finálnej verzie a ich dopad na
-používateľa. Ak žiadne významné nie sú, túto podkapitolu odstrániť.}
+Aktuálna etapa nemá trvalú offline cache, inštaláciu PWA ani mobilné
+upozornenia cez service worker. Rozpísaný text neprežije obnovenie stránky.
+Systémové upozornenia vyžadujú podporovaný prehliadač a jeho povolenie.
+Objavené kanály sa pri neoznamovaných zmenách obnovia najneskôr pri
+ďalšom 15-sekundovom obnovení. Zostávajúce manuálne skúšky a chýbajúce
+runtime snímky sú uvedené v zázname overenia; vizuálny výsledok ešte
+nie je prijatý.
 
 \section{Kľúčové obrazovky}
-Vložiť najmenej päť snímok finálnej aplikácie. Pri každej uviesť stručný
-popis toho, čo používateľ na obrazovke robí. Súbory uložiť do priečinka
-\texttt{assets/}.
+Päť aktuálnych runtime snímok zatiaľ chýba, pretože browserové
+ovládanie a Windows Computer Use boli pri overovaní nedostupné.
+Nasledujúce miesta sa doplnia po skutočnom priechode aplikáciou.
+Nesmú sa nahradiť obrázkami pôvodnej simulácie.
 
 \subsection{Prihlásenie a registrácia}
 \obrazok{assets/prihlasenie.png}{Prihlásenie a registrácia}{fig:prihlasenie}
@@ -365,7 +459,13 @@ spustení migrácií v priečinku \texttt{server/tmp} pod názvom
 \texttt{db.sqlite3}. Testy používajú samostatný súbor
 \texttt{test-db.sqlite3}. Po zmene migrácií počas vývoja treba lokálnu
 databázu znovu vytvoriť príkazom \texttt{node ace migration:fresh}.
-\doplnit{Doplniť konfiguráciu klienta a PWA.}
+Klient používa predvolene cestu \texttt{/api/v1}. Vývojový Quasar server
+smeruje \texttt{/api} a \texttt{/socket} na localhost:3333.
+Pri oddelenom nasadení možno pri zostavení nastaviť premennú
+\texttt{QCLI\_API\_URL}; WebSocket použije pôvod tejto adresy.
+Server musí povoliť adresu klienta v \texttt{CORS\_ORIGIN}.
+Pri rovnakom pôvode produkčný hostiteľ smeruje obe cesty na AdonisJS.
+PWA konfigurácia bude doplnená v druhej etape.
 
 \subsection{Inštalácia a spustenie}
 Z koreňového priečinka projektu stačí nainštalovať závislosti príkazom
@@ -373,7 +473,13 @@ Z koreňového priečinka projektu stačí nainštalovať závislosti príkazom
 zo vzoru, v priečinku \texttt{server} sa vykonajú príkazy
 \texttt{node ace generate:key} a \texttt{node ace migration:run}.
 Server sa spustí príkazom \texttt{npm run dev} v priečinku \texttt{server}.
-\doplnit{Doplniť spustenie klienta a zostavenie finálnej verzie.}
+Z koreňa sa klient spúšťa príkazom \texttt{npm run dev} na porte 9000.
+Produkčné SPA zostaví \texttt{npm run build} do \texttt{dist/spa}.
+Server zostaví \texttt{npm run build -w convo-server}.
+V PowerShelli s blokovanými skriptmi možno namiesto npm použiť npm.cmd.
+Priečinok \texttt{docs/dokumentacia} sa kompiluje príkazom
+\texttt{latexmk -pdf main.tex}. Ak latexmk nemá dostupný Perl, stačí
+dvakrát spustiť \texttt{pdflatex main.tex}.
 
 \subsection{Overenie prípadov použitia}
 Automatické HTTP testy (\texttt{npm test -w convo-server}) overujú
@@ -388,12 +494,34 @@ používateľmi sa overilo doručenie správy a zmienky cez WebSocket,
 pozvánka, odmietnutie neoprávneného odberu, udalosti písania a
 rozpracovaného textu, odpojenie pri stave offline, návrat do stavu online
 a nemožnosť opätovne použiť jednorazový lístok.
-\doplnit{Po dokončení klienta doplniť prechod všetkých jedenástich prípadov
-použitia cez výsledné rozhranie.}
+Dňa 10. 11. 2026 prešlo 14 klientských testov, 10 serverových testov,
+typová kontrola, lint a produkčné zostavenie oboch častí.
+Príkaz \texttt{npm run test:integration} proti bežiacemu lokálnemu serveru
+overil dve nezávislé inštancie skutočného klientského store: účty, verejný
+a súkromný kanál, živé členstvo, pozvánku a jej prijatie, správy,
+zmienky, draft, odber neotvoreného kanála, offline a návrat so všetkými
+65 zmeškanými správami, DND, filter upozornení, revoke a kick,
+obnovenie zakázaného prístupu, odchod, zrušenie a nové prihlásenie.
+Testové účty zostávajú v lokálnej databáze; nejde o produkčné účty.
+Samostatná skúška \texttt{npm run test:restart} spustila server na porte
+3344, uložila správu, reštartovala tento proces a overila nové spojenie,
+obnovenie účtu z tokenu a načítanie uloženej správy z databázy.
+
+Všetkých jedenásť prípadov ešte treba prejsť cez výsledné rozhranie
+v dvoch profiloch. Neoverené zostávajú čerstvé snímky, mobilná šírka,
+oba motívy, poloha posunu histórie, obnovenie stránky, reštart servera
+počas konverzácie vo výslednom rozhraní a skutočné systémové upozornenie.
+Automatická skúška obnovy store a reštartu servera pritom prešla. Dôvodom
+chýbajúceho vizuálneho priechodu je chyba
+browserového ovládania a nedostupný Windows pomocník. Podrobná matica
+automatických dôkazov a manuálnych kontrol je v súbore
+\texttt{docs/overenie-klienta.md}. Tieto výsledky nie sú vizuálnym
+potvrdením hotového rozhrania.
 
 \subsection{Overenie PWA}
-\doplnit{Uviesť výsledok skúšky inštalácie, režimu bez spojenia, návratu
-online a aktualizácie aplikácie.}
+PWA skúška neprebehla, pretože PWA ešte nie je implementovaná.
+Pred jej začatím sa na prvej prezentácii potvrdí rozsah fungovania bez
+siete, obnova spojenia, aktualizácie a požadované dôkazy.
 
 \begin{thebibliography}{9}
   \bibitem{vpwa-zadanie}
