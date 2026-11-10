@@ -41,10 +41,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 
 const open = defineModel<boolean>({ required: true });
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const name = ref('');
 const isPrivate = ref(false);
 const error = ref('');
@@ -55,9 +55,9 @@ function reset() {
   isPrivate.value = false;
   error.value = '';
 }
-function create() {
+async function create() {
   try {
-    store.createChannel(name.value, isPrivate.value);
+    await store.createChannel(name.value, isPrivate.value);
     open.value = false;
     store.feedback = 'Kanál je pripravený. Môžete začať písať.';
   } catch (e) {

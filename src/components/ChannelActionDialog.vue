@@ -6,6 +6,7 @@
     :confirm-label="details.label"
     :destructive="details.destructive"
     :error="error"
+    :busy="busy"
     :close-on-confirm="false"
     @confirm="submit"
   />
@@ -15,15 +16,18 @@
 import { toRef, watch } from 'vue';
 import ConfirmationDialog from './ConfirmationDialog.vue';
 import { useChannelAction, type ChannelAction } from '@/composables/useChannelAction';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 
 const open = defineModel<boolean>({ required: true });
 const props = defineProps<{ action: ChannelAction | null }>();
-const { details, error, confirm } = useChannelAction(toRef(props, 'action'), usePrototypeStore());
+const { details, error, busy, confirm } = useChannelAction(
+  toRef(props, 'action'),
+  useWorkspaceStore(),
+);
 watch(open, () => {
   error.value = '';
 });
-function submit() {
-  if (confirm()) open.value = false;
+async function submit() {
+  if (await confirm()) open.value = false;
 }
 </script>

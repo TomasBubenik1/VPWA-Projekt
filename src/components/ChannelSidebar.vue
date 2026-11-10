@@ -27,11 +27,17 @@
           <h2 id="invitations-title" class="section-title">Pozvánky ({{ invitations.length }})</h2>
           <ChannelInvitation
             v-for="invitation in invitations"
-            :key="invitation.channel.id"
-            :channel-name="invitation.channel.name"
-            :from="invitation.from"
-            @accept="accept(invitation.channel.id)"
-            @decline="request('decline', invitation.channel.id)"
+            :key="invitation.id"
+            :channel-name="invitation.channelName"
+            :from="invitation.inviterNickname"
+            @accept="accept(invitation.id)"
+            @decline="
+              emit('action', {
+                kind: 'decline',
+                channelId: invitation.channelId,
+                invitationId: invitation.id,
+              })
+            "
           />
           <q-separator class="q-ma-sm" />
         </section>
@@ -49,7 +55,7 @@
               :channel="channel"
               joined
               :active="channel.id === store.activeChannelId"
-              :owner="channel.owner === store.nickname"
+              :owner="channel.ownerId === store.user?.id"
               @select="select(channel.id)"
               @invite="emit('invite', channel.id)"
               @action="request($event, channel.id)"
@@ -80,27 +86,18 @@
         </section>
       </nav>
     </q-scroll-area>
-    <q-btn
-      flat
-      no-caps
-      align="left"
-      icon="science"
-      label="Vyskúšať scenáre"
-      class="q-my-sm"
-      @click="emit('demo')"
-    />
     <q-separator />
     <q-item
       clickable
       class="q-mt-xs"
-      :aria-label="`Nastavenia profilu, ${store.user?.fullName ?? ''}`"
+      :aria-label="`Nastavenia profilu, ${fullName(store.user) ?? ''}`"
       @click="emit('settings')"
     >
       <q-item-section avatar>
         <UserAvatar :nickname="store.nickname" current-user size="44px" font-size="16px" />
       </q-item-section>
       <q-item-section>
-        <q-item-label>{{ store.user?.fullName }}</q-item-label>
+        <q-item-label>{{ fullName(store.user) }}</q-item-label>
         <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           {{ presenceLabels[store.status] }}
         </q-item-label>
@@ -117,7 +114,7 @@ import { computed, ref } from 'vue';
 import ChannelListItem from './ChannelListItem.vue';
 import ChannelInvitation from './ChannelInvitation.vue';
 import UserAvatar from './UserAvatar.vue';
-import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import { fullName, presenceLabels, useWorkspaceStore } from '@/stores/workspace';
 import type { ChannelAction } from '@/composables/useChannelAction';
 
 const props = defineProps<{ mobile: boolean }>();
@@ -125,44 +122,36 @@ const emit = defineEmits<{
   close: [];
   create: [];
   settings: [];
-  demo: [];
-  invite: [channelId: string];
+  invite: [channelId: number];
   action: [value: ChannelAction];
 }>();
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const query = ref<string | null>('');
 const search = computed(() => query.value?.trim().toLowerCase() ?? '');
 const matches = (name: string) => name.toLowerCase().includes(search.value);
 const joined = computed(() => store.joinedChannels.filter((channel) => matches(channel.name)));
-const discover = computed(() =>
-  store.channels.filter(
-    (channel) =>
-      !channel.isPrivate &&
-      !channel.members.includes(store.nickname) &&
-      !channel.banned.includes(store.nickname) &&
-      matches(channel.name),
-  ),
-);
+const discover = computed(() => store.discoverChannels.filter((channel) => matches(channel.name)));
 const invitations = computed(() =>
-  store.invitations.flatMap((invitation) => {
-    const channel = store.channels.find((item) => item.id === invitation.channelId);
-    return channel && matches(channel.name) ? [{ ...invitation, channel }] : [];
-  }),
+  store.invitations.filter((invitation) => matches(invitation.channelName)),
 );
 
-function request(kind: ChannelAction['kind'], channelId: string) {
+function request(kind: ChannelAction['kind'], channelId: number) {
   emit('action', { kind, channelId });
 }
 function closeOnMobile() {
   if (props.mobile) emit('close');
 }
-function select(id: string) {
-  store.selectChannel(id);
+async function select(id: number) {
+  try {
+    await store.selectChannel(id);
+  } catch (error) {
+    store.report(error);
+  }
   closeOnMobile();
 }
-function accept(id: string) {
+async function accept(id: number) {
   try {
-    store.acceptInvitation(id);
+    await store.acceptInvitation(id);
     closeOnMobile();
   } catch (reason) {
     store.feedback = reason instanceof Error ? reason.message : 'Pozvánka už nie je platná.';

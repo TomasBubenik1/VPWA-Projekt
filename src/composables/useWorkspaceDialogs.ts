@@ -1,7 +1,6 @@
 import { computed, reactive, ref, type Ref } from 'vue';
 
-type Dialog =
-  'create' | 'invite' | 'members' | 'settings' | 'help' | 'draft' | 'demo' | 'channelAction';
+type Dialog = 'create' | 'invite' | 'members' | 'settings' | 'help' | 'draft' | 'channelAction';
 
 // One workspace dialog at a time; a mobile drawer finishes closing before it opens.
 export function useWorkspaceDialogs(isMobile: Readonly<Ref<boolean>>) {
@@ -23,7 +22,6 @@ export function useWorkspaceDialogs(isMobile: Readonly<Ref<boolean>>) {
     settings: model('settings'),
     help: model('help'),
     draft: model('draft'),
-    demo: model('demo'),
     channelAction: model('channelAction'),
   });
 

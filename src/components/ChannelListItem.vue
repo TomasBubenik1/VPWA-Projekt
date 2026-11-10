@@ -9,7 +9,7 @@
   >
     <q-item-section avatar>
       <q-avatar rounded size="28px" :color="avatarColor" :text-color="avatarTextColor">
-        <q-icon :name="channel.isPrivate ? 'lock_outline' : 'tag'" size="16px" />
+        <q-icon :name="channel.type === 'private' ? 'lock_outline' : 'tag'" size="16px" />
       </q-avatar>
     </q-item-section>
     <q-item-section class="ellipsis">{{ channel.name }}</q-item-section>
@@ -31,7 +31,7 @@
           <q-list>
             <q-item v-if="owner" dense><q-item-section>Ste správca kanála</q-item-section></q-item>
             <q-item
-              v-if="!channel.isPrivate || owner"
+              v-if="channel.type !== 'private' || owner"
               clickable
               v-close-popup
               @click="emit('invite')"
@@ -39,7 +39,7 @@
               <q-item-section avatar><q-icon name="person_add_alt" /></q-item-section>
               <q-item-section>Pozvať člena</q-item-section>
             </q-item>
-            <q-separator v-if="!channel.isPrivate || owner" />
+            <q-separator v-if="channel.type !== 'private' || owner" />
             <q-item
               clickable
               v-close-popup
@@ -69,10 +69,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
-import type { PrototypeChannel } from '@/stores/prototype';
+import type { Channel } from '@/stores/workspace';
 
 const props = defineProps<{
-  channel: PrototypeChannel;
+  channel: Channel;
   active?: boolean;
   joined?: boolean;
   owner?: boolean;

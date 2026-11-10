@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="open">
+  <q-dialog v-model="open" :persistent="busy">
     <q-card flat bordered class="q-dialog-plugin">
       <q-card-section>
         <h2 class="text-h6 q-ma-none">{{ title }}</h2>
@@ -7,12 +7,13 @@
         <p v-if="error" class="text-negative text-caption q-mb-none" role="alert">{{ error }}</p>
       </q-card-section>
       <q-card-actions align="right" class="q-px-md q-pb-md">
-        <q-btn flat no-caps label="Zrušiť" v-close-popup />
+        <q-btn flat no-caps label="Zrušiť" :disable="busy" v-close-popup />
         <q-btn
           unelevated
           no-caps
           :color="destructive ? 'negative' : 'primary'"
           :label="confirmLabel"
+          :loading="busy"
           @click="confirm"
         />
       </q-card-actions>
@@ -30,8 +31,9 @@ const props = withDefaults(
     destructive?: boolean;
     error?: string;
     closeOnConfirm?: boolean;
+    busy?: boolean;
   }>(),
-  { destructive: false, error: '', closeOnConfirm: true },
+  { destructive: false, error: '', closeOnConfirm: true, busy: false },
 );
 const emit = defineEmits<{ confirm: [] }>();
 

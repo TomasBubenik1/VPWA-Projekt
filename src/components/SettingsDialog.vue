@@ -17,7 +17,7 @@
             unelevated
             toggle-color="primary"
             :options="statusOptions"
-            @update:model-value="store.setStatus"
+            @update:model-value="setStatus"
           />
           <p class="text-caption q-my-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
             {{ statusHelp[store.status] }}
@@ -26,7 +26,12 @@
         <q-separator class="q-my-md" />
         <section>
           <h3 class="q-mt-none q-mb-sm text-subtitle1 text-weight-medium">Upozornenia</h3>
-          <q-toggle v-model="store.directOnly" label="Iba správy adresované mne" color="primary" />
+          <q-toggle
+            :model-value="store.directOnly"
+            @update:model-value="setDirectOnly"
+            label="Iba správy adresované mne"
+            color="primary"
+          />
         </section>
         <q-separator class="q-my-md" />
         <section>
@@ -60,7 +65,7 @@
     message="Budete sa musieť znovu prihlásiť, aby ste mohli pokračovať."
     confirm-label="Odhlásiť sa"
     destructive
-    @confirm="store.signOut()"
+    @confirm="signOut"
   />
 </template>
 
@@ -68,14 +73,35 @@
 import { ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import ConfirmationDialog from './ConfirmationDialog.vue';
-import type { Presence } from '@/stores/prototype';
-import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import type { Presence } from '@/stores/workspace';
+import { presenceLabels, useWorkspaceStore } from '@/stores/workspace';
 
 // Use cases 1 (sign out), 8 (notification filter) and 9 (presence), plus the color theme.
 const open = defineModel<boolean>({ required: true });
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const $q = useQuasar();
 const signOutOpen = ref(false);
+async function setStatus(value: Presence) {
+  try {
+    await store.setStatus(value);
+  } catch (error) {
+    store.report(error);
+  }
+}
+async function setDirectOnly(value: boolean) {
+  try {
+    await store.setNotificationMode(value ? 'mentionsOnly' : 'all');
+  } catch (error) {
+    store.report(error);
+  }
+}
+async function signOut() {
+  try {
+    await store.signOut();
+  } catch (error) {
+    store.report(error);
+  }
+}
 
 const statusOptions = (Object.keys(presenceLabels) as Presence[]).map((value) => ({
   value,

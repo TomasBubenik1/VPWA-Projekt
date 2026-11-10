@@ -16,35 +16,34 @@
         <q-btn flat round dense icon="close" aria-label="Zavrieť členov" v-close-popup />
       </q-card-section>
       <q-list>
-        <q-item v-for="member in channel?.members" :key="member">
-          <q-item-section avatar><UserAvatar :nickname="member" /></q-item-section>
+        <q-item v-for="member in channel?.members" :key="member.id">
+          <q-item-section avatar><UserAvatar :nickname="member.nickname" /></q-item-section>
           <q-item-section>
-            <q-item-label>{{ displayName(member) }}</q-item-label>
+            <q-item-label>{{ fullName(member) }}</q-item-label>
             <q-item-label caption :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
-              @{{ member }},
-              {{ member === channel?.owner ? 'správca' : presenceLabels[presence(member)] }}
-            </q-item-label>
-            <q-item-label
-              v-if="channel?.votes[member]?.length"
-              caption
-              :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-            >
-              Hlasy na vyradenie: {{ channel.votes[member]?.length }}/3
+              @{{ member.nickname }},
+              {{ member.id === channel?.ownerId ? 'správca' : presenceLabels[member.presence] }}
             </q-item-label>
           </q-item-section>
           <q-item-section
-            v-if="canModerate(member)"
+            v-if="canModerate(member.id)"
             side
             :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
           >
-            <q-btn flat round dense icon="more_horiz" :aria-label="`Možnosti člena ${member}`">
+            <q-btn
+              flat
+              round
+              dense
+              icon="more_horiz"
+              :aria-label="`Možnosti člena ${member.nickname}`"
+            >
               <q-menu anchor="bottom right" self="top right">
                 <q-list>
                   <q-item
                     clickable
                     v-close-popup
                     class="text-negative"
-                    @click="requestModeration(member)"
+                    @click="requestModeration(member.nickname)"
                   >
                     <q-item-section>{{ moderation.action }}</q-item-section>
                   </q-item>
@@ -54,7 +53,7 @@
           </q-item-section>
         </q-item>
       </q-list>
-      <q-card-section v-if="channel && (!channel.isPrivate || isOwner)">
+      <q-card-section v-if="channel && (channel.type !== 'private' || isOwner)">
         <q-btn
           outline
           no-caps
@@ -83,20 +82,24 @@
 import { computed, ref, watch } from 'vue';
 import UserAvatar from './UserAvatar.vue';
 import ConfirmationDialog from './ConfirmationDialog.vue';
-import { presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import { fullName, presenceLabels, useWorkspaceStore } from '@/stores/workspace';
 import { memberCount } from '@/utils/format';
 
 // Use case 10 (/list) and the UI way to /revoke or /kick a member.
 const open = defineModel<boolean>({ required: true });
 defineProps<{ mobile: boolean }>();
 const emit = defineEmits<{ invite: [] }>();
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
+watch(open, (value) => {
+  if (value && store.activeChannelId)
+    void store.loadMembers(store.activeChannelId).catch(store.report);
+});
 const channel = computed(() => store.activeChannel);
-const isOwner = computed(() => channel.value?.owner === store.nickname);
+const isOwner = computed(() => channel.value?.ownerId === store.user?.id);
 const target = ref('');
 const error = ref('');
 const confirmationOpen = ref(false);
-let targetChannelId = '';
+let targetChannelId: number | null = null;
 
 function requestModeration(member: string) {
   target.value = member;
@@ -115,7 +118,7 @@ watch(
 
 // Texts differ by channel type and role, rules are the same as /revoke and /kick.
 const moderation = computed(() => {
-  if (channel.value?.isPrivate)
+  if (channel.value?.type === 'private')
     return {
       action: 'Odobrať členstvo',
       question: 'Odobrať členstvo?',
@@ -134,19 +137,16 @@ const moderation = computed(() => {
   };
 });
 
-const displayName = (nick: string) =>
-  store.data.users.find((u) => u.nickname === nick)?.fullName ?? nick;
-const presence = (nick: string) => store.data.statuses[nick] ?? 'online';
-const canModerate = (member: string) =>
-  member !== store.nickname &&
-  member !== channel.value?.owner &&
-  (!channel.value?.isPrivate || isOwner.value);
+const canModerate = (member: number) =>
+  member !== store.user?.id &&
+  member !== channel.value?.ownerId &&
+  (channel.value?.type !== 'private' || isOwner.value);
 
-function moderate() {
+async function moderate() {
   try {
     if (store.activeChannelId !== targetChannelId)
       throw new Error('Kanál sa zmenil. Vyberte člena znova.');
-    store.moderate(target.value, channel.value?.isPrivate ? 'revoke' : 'kick');
+    await store.moderate(target.value, channel.value?.type === 'private' ? 'revoke' : 'kick');
     confirmationOpen.value = false;
     target.value = '';
   } catch (e) {

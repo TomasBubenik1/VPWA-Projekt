@@ -27,9 +27,9 @@
 </template>
 
 <script setup lang="ts">
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 
 // Use case 11: the text is read straight from the store, so every keystroke shows up here.
 const open = defineModel<boolean>({ required: true });
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 </script>

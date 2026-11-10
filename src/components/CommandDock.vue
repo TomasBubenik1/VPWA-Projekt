@@ -8,7 +8,7 @@
       color="primary"
       icon="edit_note"
       class="q-mb-xs"
-      :label="`@${store.typing?.nickname} píše`"
+      :label="store.typingUsers.map((user) => `@${user.nickname}`).join(', ') + ' píše'"
       @click="emit('showDraft')"
     />
     <q-input
@@ -49,7 +49,8 @@
           color="primary"
           icon="arrow_upward"
           aria-label="Odoslať správu alebo príkaz"
-          :disable="!commandLine.trim()"
+          :disable="!commandLine.trim() || submitting"
+          :loading="submitting"
           @click="submitCommand"
         />
       </template>
@@ -62,12 +63,24 @@
       <span>{{ commandLine.length }}/4000</span>
     </div>
   </div>
+  <ConfirmationDialog
+    v-model="confirmationOpen"
+    :title="confirmationTitle"
+    :message="confirmationMessage"
+    confirm-label="Potvrdiť"
+    destructive
+    :error="commandError"
+    :busy="submitting"
+    :close-on-confirm="false"
+    @confirm="confirmCommand"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import type { QInput } from 'quasar';
-import { usePrototypeStore } from '@/stores/prototype';
+import ConfirmationDialog from './ConfirmationDialog.vue';
+import { useWorkspaceStore } from '@/stores/workspace';
 
 // The fixed command line: every message and every /command goes through here.
 const emit = defineEmits<{
@@ -77,16 +90,41 @@ const emit = defineEmits<{
   help: [];
   showDraft: [];
 }>();
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const channel = computed(() => store.activeChannel);
 const composerInput = ref<QInput>();
 const commandError = ref('');
+const submitting = ref(false);
+const confirmationOpen = ref(false);
+const pending = ref<{
+  kind: 'leave' | 'destroy' | 'kick' | 'revoke';
+  channelId: number;
+  target: string;
+  origin: string;
+  text: string;
+} | null>(null);
+const confirmationTitle = computed(() =>
+  pending.value?.kind === 'kick'
+    ? 'Hlasovať za vylúčenie?'
+    : pending.value?.kind === 'revoke'
+      ? 'Odobrať členstvo?'
+      : pending.value?.kind === 'destroy'
+        ? 'Zrušiť kanál?'
+        : 'Opustiť kanál?',
+);
+const confirmationMessage = computed(() => {
+  const request = pending.value;
+  const target = store.channels.find((item) => item.id === request?.channelId);
+  if (request?.kind === 'kick' || request?.kind === 'revoke')
+    return `Potvrďte akciu pre @${request.target} v #${target?.name}. ${request.kind === 'kick' && target?.ownerId === store.user?.id ? 'Používateľ dostane zákaz prístupu.' : ''}`;
+  return `Potvrďte akciu v #${target?.name}. ${request?.kind === 'destroy' || target?.ownerId === store.user?.id ? 'Kanál aj jeho správy sa odstránia všetkým členom.' : 'Vaše členstvo sa ukončí.'}`;
+});
 
 // Each channel keeps its own unsent draft.
 const commandLine = computed({
   get: () => store.drafts[store.activeChannelId || '_none'] ?? '',
   set: (value: string) => {
-    store.drafts[store.activeChannelId || '_none'] = value;
+    store.updateDraft(value);
   },
 });
 const typingHere = computed(
@@ -100,22 +138,55 @@ function onEnter(event: KeyboardEvent) {
   event.preventDefault();
   submitCommand();
 }
-function submitCommand() {
+async function submitCommand() {
   const text = commandLine.value.trim();
-  if (!text) return;
+  if (!text || submitting.value) return;
+  submitting.value = true;
   commandError.value = '';
   try {
     const origin = store.activeChannelId || '_none';
     if (text.startsWith('/')) {
-      const action = store.processChannelCommand(text);
+      const action = await store.processChannelCommand(text);
       if (action === 'members') emit('members');
-      if (action === 'leave') emit('leave');
-      if (action === 'destroy') emit('destroy');
-    } else store.sendMessage(text);
-    store.drafts[origin] = '';
+      if (['leave', 'destroy', 'kick', 'revoke'].includes(action) && store.activeChannelId) {
+        pending.value = {
+          kind: action as 'leave' | 'destroy' | 'kick' | 'revoke',
+          channelId: store.activeChannelId,
+          target: text.split(/\s+/)[1]?.replace(/^@/, '') ?? '',
+          origin: String(origin),
+          text: commandLine.value,
+        };
+        confirmationOpen.value = true;
+        return;
+      }
+    } else await store.sendMessage(text);
+    // Keep any text typed while the request was in flight.
+    if (store.drafts[origin]?.trim() === text) store.drafts[origin] = '';
+    if (origin === store.activeChannelId) store.clearTyping();
     focus();
   } catch (e) {
     commandError.value = e instanceof Error ? e.message : 'Akciu sa nepodarilo dokončiť.';
+  } finally {
+    submitting.value = false;
+  }
+}
+async function confirmCommand() {
+  const request = pending.value;
+  if (!request || submitting.value) return;
+  submitting.value = true;
+  try {
+    if (request.kind === 'kick' || request.kind === 'revoke')
+      await store.moderate(request.target, request.kind, request.channelId);
+    else if (request.kind === 'destroy') await store.destroyChannel(request.channelId);
+    else await store.leaveChannel(request.channelId);
+    if (store.drafts[request.origin] === request.text) store.drafts[request.origin] = '';
+    store.clearTyping();
+    confirmationOpen.value = false;
+    commandError.value = '';
+  } catch (error) {
+    commandError.value = error instanceof Error ? error.message : 'Akcia zlyhala.';
+  } finally {
+    submitting.value = false;
   }
 }
 function focus() {

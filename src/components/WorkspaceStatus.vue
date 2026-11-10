@@ -13,20 +13,29 @@
       no-caps
       color="primary"
       label="Prejsť online"
-      @click="store.setStatus('online')"
+      @click="store.setStatus('online').catch(store.report)"
     />
   </q-banner>
-  <q-banner v-if="store.storageWarning" dense role="alert" :class="background">
-    {{ store.storageWarning }}
+  <q-banner
+    v-if="!store.networkOnline || (store.status !== 'offline' && store.connection !== 'connected')"
+    dense
+    role="status"
+    :class="background"
+  >
+    {{
+      !store.networkOnline
+        ? 'Sieť nie je dostupná. Neodoslaný text zostáva v editore.'
+        : 'Obnovujem živé spojenie a synchronizujem správy…'
+    }}
   </q-banner>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const $q = useQuasar();
 const offline = computed(() => store.status === 'offline');
 const background = computed(() => ($q.dark.isActive ? 'bg-grey-9' : 'bg-grey-2'));

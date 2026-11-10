@@ -59,15 +59,21 @@
             <q-form class="column q-gutter-y-sm" @submit="submit">
               <template v-if="mode === 'signup'">
                 <q-input
-                  v-model.trim="fullName"
+                  v-model.trim="firstName"
                   outlined
                   hide-bottom-space
-                  label="Meno a priezvisko"
-                  autocomplete="name"
-                  :rules="[
-                    (v) =>
-                      String(v).trim().split(/\s+/).length >= 2 || 'Vyplňte meno aj priezvisko.',
-                  ]"
+                  label="Meno"
+                  autocomplete="given-name"
+                  :rules="[(v) => String(v).trim().length > 0 || 'Vyplňte meno.']"
+                  lazy-rules
+                />
+                <q-input
+                  v-model.trim="lastName"
+                  outlined
+                  hide-bottom-space
+                  label="Priezvisko"
+                  autocomplete="family-name"
+                  :rules="[(v) => !!String(v).trim() || 'Vyplňte priezvisko.']"
                   lazy-rules
                 />
                 <q-input
@@ -130,6 +136,7 @@
               </p>
               <q-btn
                 type="submit"
+                :loading="submitting"
                 no-caps
                 unelevated
                 color="primary"
@@ -149,16 +156,18 @@ import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import authArtDark from '@/assets/auth-abstract.webp';
 import authArtLight from '@/assets/auth-abstract-light.webp';
-import { usePrototypeStore } from '@/stores/prototype';
-const store = usePrototypeStore();
+import { useWorkspaceStore } from '@/stores/workspace';
+const store = useWorkspaceStore();
 const $q = useQuasar();
 const isDark = computed(() => $q.dark.isActive);
 const isMobile = computed(() => $q.screen.width <= 700);
 const mode = ref<'login' | 'signup'>('login');
-const fullName = ref('');
+const firstName = ref('');
+const lastName = ref('');
+const submitting = ref(false);
 const nickname = ref('');
-const email = ref('alex@convo.app');
-const password = ref('convo-demo');
+const email = ref('');
+const password = ref('');
 const confirmation = ref('');
 const showPassword = ref(false);
 const message = ref('');
@@ -171,20 +180,25 @@ function toggleTheme() {
     /* The choice stays in memory only. */
   }
 }
-function submit() {
+async function submit() {
+  if (submitting.value) return;
+  submitting.value = true;
   message.value = '';
   try {
-    if (mode.value === 'login') store.signIn(email.value, password.value);
+    if (mode.value === 'login') await store.signIn(email.value, password.value);
     else
-      store.signUp({
-        fullName: fullName.value,
+      await store.signUp({
+        firstName: firstName.value,
+        lastName: lastName.value,
         nickname: nickname.value,
         email: email.value,
         password: password.value,
-        confirmation: confirmation.value,
+        passwordConfirmation: confirmation.value,
       });
   } catch (reason) {
     message.value = reason instanceof Error ? reason.message : 'Nepodarilo sa pokračovať.';
+  } finally {
+    submitting.value = false;
   }
 }
 </script>

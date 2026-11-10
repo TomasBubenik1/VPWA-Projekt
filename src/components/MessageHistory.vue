@@ -23,6 +23,14 @@
           <q-spinner-dots color="primary" size="24px" />
         </div>
       </template>
+      <q-banner v-if="channel.historyError" dense role="alert"
+        >{{ channel.historyError }}<q-btn flat no-caps label="Skúsiť znova" @click="retryHistory"
+      /></q-banner>
+      <q-spinner
+        v-if="channel.loading && !channel.loaded"
+        class="self-center q-my-md"
+        color="primary"
+      />
       <q-btn
         v-if="hasOlder"
         flat
@@ -33,7 +41,7 @@
         @click="infiniteScroll?.trigger()"
       />
       <div
-        v-else
+        v-else-if="channel.loaded"
         class="row flex-center q-my-md text-caption q-gutter-sm"
         :class="isDark ? 'text-grey-4' : 'text-grey-7'"
       >
@@ -42,12 +50,14 @@
       </div>
       <template v-for="(message, index) in visible" :key="message.id">
         <div
-          v-if="index === 0 || dayKey(message.sentAt) !== dayKey(visible[index - 1]?.sentAt ?? 0)"
+          v-if="
+            index === 0 || dayKey(message.createdAt) !== dayKey(visible[index - 1]?.createdAt ?? '')
+          "
           class="row no-wrap items-center q-gutter-sm q-my-md text-caption"
           :class="isDark ? 'text-grey-4' : 'text-grey-7'"
         >
           <q-separator class="col" />
-          <span>{{ day(message.sentAt) }}</span>
+          <span>{{ day(message.createdAt) }}</span>
           <q-separator class="col" />
         </div>
         <ChatMessage :message="message" />
@@ -70,13 +80,13 @@
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue';
 import { useQuasar, type QInfiniteScroll, type QScrollArea } from 'quasar';
 import ChatMessage from './ChatMessage.vue';
-import { usePrototypeStore } from '@/stores/prototype';
-import type { PrototypeChannel } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
+import type { Channel } from '@/stores/workspace';
 import { useMessageWindow } from '@/composables/useMessageWindow';
 
 // QInfiniteScroll reverse loads older pages and preserves the reader's scroll position.
-const props = defineProps<{ channel: PrototypeChannel }>();
-const store = usePrototypeStore();
+const props = defineProps<{ channel: Channel }>();
+const store = useWorkspaceStore();
 const $q = useQuasar();
 const isDark = computed(() => $q.dark.isActive);
 const scrollArea = ref<QScrollArea>();
@@ -85,15 +95,19 @@ const scroller = computed(() => scrollArea.value?.getScrollTarget());
 const newBelow = ref(0);
 const atBottom = ref(true);
 
-const { visible, hasOlder, loadOlder: expandHistory } = useMessageWindow(toRef(props, 'channel'));
+const {
+  visible,
+  hasOlder,
+  loadOlder: expandHistory,
+} = useMessageWindow(toRef(props, 'channel'), store);
 
 const dateFormat = new Intl.DateTimeFormat('sk', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
-const day = (value: number) => dateFormat.format(value);
-const dayKey = (value: number) => new Date(value).toDateString();
+const day = (value: string) => dateFormat.format(new Date(value));
+const dayKey = (value: string) => new Date(value).toDateString();
 
 async function toBottom() {
   await nextTick();
@@ -102,11 +116,24 @@ async function toBottom() {
   newBelow.value = 0;
 }
 
-function loadOlder(_index: number, done: (stop?: boolean) => void) {
-  expandHistory();
-  done(!hasOlder.value);
+async function loadOlder(_index: number, done: (stop?: boolean) => void) {
+  try {
+    await expandHistory();
+    await nextTick();
+  } catch {
+    /* Error and retry are shown above the history. */
+  }
+  done(!hasOlder.value || !!props.channel.historyError);
 }
 
+async function retryHistory() {
+  try {
+    await store.loadHistory(props.channel.id, props.channel.loaded);
+    infiniteScroll.value?.resume();
+  } catch {
+    /* Keep the error visible. */
+  }
+}
 function trackPosition(info: {
   verticalPosition: number;
   verticalSize: number;
@@ -119,13 +146,14 @@ function trackPosition(info: {
 // The workspace keys this component by account and channel, resetting scroll and unread state.
 onMounted(() => void toBottom());
 watch(
-  () => props.channel.messages.length,
-  (count, previousCount) => {
-    if (count <= previousCount) return;
+  () => props.channel.messages.at(-1)?.id,
+  (id, previousId) => {
+    if (!id || id === previousId) return;
+    const added = props.channel.messages.filter((message) => message.id > (previousId ?? 0)).length;
     const last = props.channel.messages.at(-1);
     // Follow new messages only when the reader is already at the end or wrote the message.
-    if (atBottom.value || last?.nickname === store.nickname) void toBottom();
-    else newBelow.value += count - previousCount;
+    if (atBottom.value || last?.authorNickname === store.nickname) void toBottom();
+    else newBelow.value += added;
   },
 );
 </script>

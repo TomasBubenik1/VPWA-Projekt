@@ -67,7 +67,7 @@ const commands = [
   {
     syntax: '/revoke prezývka',
     example: '/revoke ',
-    description: 'Správca odoberie súkromné členstvo alebo pozvánku.',
+    description: 'Správca odoberie členstvo v súkromnom kanáli.',
   },
   {
     syntax: '/kick prezývka',

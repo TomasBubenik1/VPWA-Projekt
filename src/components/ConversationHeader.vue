@@ -16,7 +16,7 @@
       :text-color="$q.dark.isActive ? 'green-2' : 'teal-10'"
       class="q-mr-sm"
     >
-      <q-icon :name="channel?.isPrivate ? 'lock_outline' : 'tag'" size="20px" />
+      <q-icon :name="channel?.type === 'private' ? 'lock_outline' : 'tag'" size="20px" />
     </q-avatar>
     <q-toolbar-title class="text-h6 text-weight-medium ellipsis">{{
       channel?.name ?? 'Vaše konverzácie'
@@ -37,7 +37,7 @@
         <q-menu anchor="bottom right" self="top right">
           <q-list>
             <q-item
-              v-if="!channel?.isPrivate || isOwner"
+              v-if="channel?.type !== 'private' || isOwner"
               clickable
               v-close-popup
               @click="emit('invite')"
@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { memberCount } from '@/utils/format';
 
 defineProps<{ mobile: boolean }>();
@@ -91,7 +91,7 @@ const emit = defineEmits<{
   leave: [];
   destroy: [];
 }>();
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const channel = computed(() => store.activeChannel);
-const isOwner = computed(() => channel.value?.owner === store.nickname);
+const isOwner = computed(() => channel.value?.ownerId === store.user?.id);
 </script>

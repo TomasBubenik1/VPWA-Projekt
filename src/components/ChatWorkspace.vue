@@ -14,7 +14,6 @@
         @close="sidebarOpen = false"
         @create="open('create')"
         @settings="open('settings')"
-        @demo="open('demo')"
         @invite="openInvite($event)"
         @action="requestChannelAction"
       />
@@ -79,12 +78,11 @@
     <SettingsDialog v-model="dialogs.settings" />
     <CommandHelpDialog v-model="dialogs.help" @insert="dock?.insert($event)" />
     <TypingPreviewDialog v-model="dialogs.draft" />
-    <DemoScenarios v-model="dialogs.demo" :mobile="isMobile" />
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import ChannelSidebar from './ChannelSidebar.vue';
 import ConversationHeader from './ConversationHeader.vue';
@@ -97,14 +95,13 @@ import MembersPanel from './MembersPanel.vue';
 import SettingsDialog from './SettingsDialog.vue';
 import CommandHelpDialog from './CommandHelpDialog.vue';
 import TypingPreviewDialog from './TypingPreviewDialog.vue';
-import DemoScenarios from './DemoScenarios.vue';
 import WorkspaceStatus from './WorkspaceStatus.vue';
-import { usePrototypeStore } from '@/stores/prototype';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { useWorkspaceDialogs } from '@/composables/useWorkspaceDialogs';
 import { useWorkspaceNotifications } from '@/composables/useWorkspaceNotifications';
 import type { ChannelAction } from '@/composables/useChannelAction';
 
-const store = usePrototypeStore();
+const store = useWorkspaceStore();
 const $q = useQuasar();
 const mobileBreakpoint = 700;
 const isMobile = computed(() => $q.screen.width <= mobileBreakpoint);
@@ -112,7 +109,7 @@ const isDark = computed(() => $q.dark.isActive);
 const channel = computed(() => store.activeChannel);
 const dock = ref<InstanceType<typeof CommandDock>>();
 const channelAction = ref<ChannelAction | null>(null);
-const inviteChannelId = ref<string | null>(null);
+const inviteChannelId = ref<number | null>(null);
 const { sidebarOpen, dialogs, open, afterSidebarHide, reset } = useWorkspaceDialogs(isMobile);
 useWorkspaceNotifications();
 
@@ -137,5 +134,4 @@ watch(
     inviteChannelId.value = null;
   },
 );
-onMounted(() => store.expireInactiveChannels());
 </script>

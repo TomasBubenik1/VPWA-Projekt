@@ -1,22 +1,22 @@
 import { computed, ref, watch, type Ref } from 'vue';
-import type { createPrototypeStore } from '../stores/prototype.ts';
+import type { createWorkspaceStore } from '../stores/workspace.ts';
 
 export interface ChannelAction {
   kind: 'join' | 'decline' | 'leave' | 'destroy';
-  channelId: string;
+  channelId: number;
+  invitationId?: number;
 }
-
-// Keep the target ID from the clicked row, even when a different conversation is active.
 export function useChannelAction(
   action: Readonly<Ref<ChannelAction | null>>,
-  store: ReturnType<typeof createPrototypeStore>,
+  store: ReturnType<typeof createWorkspaceStore>,
 ) {
   const error = ref('');
+  const busy = ref(false);
   const channel = computed(() =>
     store.channels.find((item) => item.id === action.value?.channelId),
   );
   const details = computed(() => {
-    const name = `#${channel.value?.name ?? ''}`;
+    const name = `#${channel.value?.name ?? store.invitations.find((i) => i.id === action.value?.invitationId)?.channelName ?? ''}`;
     switch (action.value?.kind) {
       case 'join':
         return {
@@ -43,7 +43,7 @@ export function useChannelAction(
         return {
           title: 'Opustiť kanál?',
           message:
-            channel.value?.owner === store.nickname
+            channel.value?.ownerId === store.user?.id
               ? `Odchodom správcu kanál ${name} zanikne aj pre ostatných členov.`
               : `Kanál ${name} zmizne z vášho zoznamu.`,
           label: 'Opustiť kanál',
@@ -54,27 +54,27 @@ export function useChannelAction(
   watch(action, () => {
     error.value = '';
   });
-
-  function confirm() {
+  async function confirm() {
+    if (busy.value) return false;
+    busy.value = true;
     const request = action.value;
-    const target = channel.value;
     try {
-      if (!request || !target) throw new Error('Kanál už neexistuje.');
+      if (!request) throw new Error('Vyberte kanál.');
       switch (request.kind) {
         case 'join':
-          store.joinPublic(target.id);
+          await store.joinPublic(request.channelId);
           break;
         case 'decline':
-          if (!store.invitations.some((invite) => invite.channelId === target.id))
-            throw new Error('Pozvánka už nie je platná.');
-          store.declineInvitation(target.id);
+          if (!request.invitationId) throw new Error('Pozvánka už nie je platná.');
+          await store.declineInvitation(request.invitationId);
           break;
         case 'destroy':
+          await store.destroyChannel(request.channelId);
+          store.feedback = 'Kanál bol zrušený.';
+          break;
         case 'leave': {
-          const isOwner = target.owner === store.nickname;
-          if (request.kind === 'destroy' && !isOwner)
-            throw new Error('Kanál môže zrušiť iba správca.');
-          store.leaveChannel(target.id);
+          const isOwner = channel.value?.ownerId === store.user?.id;
+          await store.leaveChannel(request.channelId);
           store.feedback = isOwner ? 'Kanál bol zrušený.' : 'Opustili ste kanál.';
           break;
         }
@@ -84,7 +84,9 @@ export function useChannelAction(
     } catch (reason) {
       error.value = reason instanceof Error ? reason.message : 'Akciu sa nepodarilo dokončiť.';
       return false;
+    } finally {
+      busy.value = false;
     }
   }
-  return { details, error, confirm };
+  return { details, error, busy, confirm };
 }

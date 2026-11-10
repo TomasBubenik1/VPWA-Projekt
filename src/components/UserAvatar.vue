@@ -37,7 +37,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { presenceColors, presenceLabels, usePrototypeStore } from '@/stores/prototype';
+import {
+  fullName as userFullName,
+  presenceColors,
+  presenceLabels,
+  useWorkspaceStore,
+} from '@/stores/workspace';
 
 // One place for initials, used by the sidebar, history and member list.
 const props = withDefaults(
@@ -49,11 +54,11 @@ const props = withDefaults(
   }>(),
   { size: '36px' },
 );
-const store = usePrototypeStore();
-const status = computed(() => store.data.statuses[props.nickname] ?? 'online');
+const store = useWorkspaceStore();
+const status = computed(() => store.memberByNickname(props.nickname)?.presence ?? 'offline');
 
 const fullName = computed(
-  () => store.data.users.find((u) => u.nickname === props.nickname)?.fullName ?? props.nickname,
+  () => userFullName(store.memberByNickname(props.nickname) ?? null) || props.nickname,
 );
 const initials = computed(() =>
   fullName.value
