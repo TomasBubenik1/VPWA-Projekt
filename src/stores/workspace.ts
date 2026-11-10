@@ -585,6 +585,7 @@ export function createWorkspaceStore(
         );
         if (version !== generation || socket !== connection || attempt !== realtimeVersion) return;
         retryDelay = 1000;
+        state.initializationError = '';
         state.connection = 'connected';
       } catch (error) {
         if (version !== generation || attempt !== realtimeVersion) return;

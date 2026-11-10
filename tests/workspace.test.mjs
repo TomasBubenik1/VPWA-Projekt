@@ -167,6 +167,8 @@ function fixture(presence = 'offline') {
   stores.push(store);
   return {
     store,
+    fetch,
+    socketFactory,
     calls,
     sockets,
     values,
@@ -333,4 +335,47 @@ test('mobilný dialóg počká na zatvorenie navigácie', () => {
   assert.equal(navigation.dialogs.settings, true);
   navigation.reset();
   assert.ok(Object.values(navigation.dialogs).every((value) => !value));
+});
+
+test('obnovenie store načíta profil pomocou tokenu bez opätovného prihlásenia', async () => {
+  const original = fixture();
+  await original.store.signIn('', '');
+  const restored = createWorkspaceStore({
+    baseUrl: 'http://localhost:3333/api/v1',
+    fetch: original.fetch,
+    socketFactory: original.socketFactory,
+    storage: {
+      getItem: (key) => original.values.get(key) ?? null,
+      setItem: (key, value) => original.values.set(key, value),
+      removeItem: (key) => original.values.delete(key),
+    },
+  });
+  stores.push(restored);
+  const before = original.calls.filter((c) => c.path.startsWith('/auth/')).length;
+  await restored.initialize();
+  assert.equal(restored.user.id, 1);
+  assert.equal(restored.activeChannelId, 10);
+  assert.equal(restored.initializing, false);
+  assert.equal(original.calls.filter((c) => c.path.startsWith('/auth/')).length, before);
+});
+
+test('oneskorený PATCH po odhlásení nesmie obnoviť účet ani nastavenia', async () => {
+  const { store, setOverride } = fixture();
+  await store.signIn('', '');
+  let finish;
+  setOverride((path, options) =>
+    path === '/account/profile' && options.method === 'PATCH'
+      ? new Promise((resolve) => {
+          finish = resolve;
+        })
+      : undefined,
+  );
+  const pending = store.setStatus('online');
+  await eventually(() => !!finish);
+  await store.signOut();
+  finish(Response.json({ id: 1, nickname: 'alex', presence: 'online' }));
+  await pending;
+  assert.equal(store.user, null);
+  assert.equal(store.savingProfile, false);
+  assert.equal(store.connection, 'disconnected');
 });

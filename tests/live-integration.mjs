@@ -114,5 +114,15 @@ try {
     'PASS: 2 účty, HTTP autentifikácia, verejné/súkromné kanály, živé členstvo, pozvánky, správy, zmienky, draft, všetky odbery, 65 zmeškaných správ, DND, nastavenia, revoke/kick, obnovenie prístupu, odchod, zrušenie a odhlásenie.',
   );
 } finally {
-  stores.forEach((store) => store.dispose());
+  for (const store of stores) {
+    for (const channel of store.joinedChannels.filter(
+      (item) =>
+        item.ownerId === store.user?.id &&
+        [`public-${suffix}`, `private-${suffix}`].includes(item.name),
+    )) {
+      await store.destroyChannel(channel.id).catch(() => {});
+    }
+    if (store.user) await store.signOut().catch(() => {});
+    store.dispose();
+  }
 }
