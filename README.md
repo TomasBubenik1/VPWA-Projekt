@@ -90,4 +90,4 @@ Počas behu lokálneho servera možno spustiť aj `npm run test:integration`. Sk
 
 `npm run test:restart` spustí samostatný lokálny server na porte 3344, uloží správu, reštartuje tento server a overí perzistenciu, nový socket aj obnovenie účtu z tokenu. Vyžaduje pripravený `server/.env` a migrácie; používa lokálnu SQLite databázu a zanechá jeden testovací účet. Spustený vývojový server na porte 3333 nemení.
 
-Posledné výsledky a zostávajúce manuálne kontroly sú v [zázname overenia](docs/overenie-klienta.md). Vizuálny priechod v dvoch prehliadačoch, mobilná šírka, oba motívy, päť snímok a reálne systémové upozornenie zostávajú neoverené pre nedostupné browserové ovládanie. PWA sa ešte netestovala.
+Výsledok priechodu aplikáciou s tromi používateľmi, vrátane mobilnej šírky, oboch motívov a upozornení, a snímky obrazovky sú v [dokumentácii](docs/dokumentacia/main.tex). PWA sa ešte netestovala.

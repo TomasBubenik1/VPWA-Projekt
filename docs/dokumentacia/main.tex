@@ -10,15 +10,12 @@
 \usepackage{hyperref}
 
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue!60!black}
-\newcommand{\doplnit}[1]{\par\noindent\textit{Doplniť: #1}\par}
 \newcommand{\obrazok}[3]{%
-  \IfFileExists{#1}{%
     \begin{figure}[htbp]
       \centering
       \includegraphics[width=\linewidth,height=.72\textheight,keepaspectratio]{#1}
       \caption{#2}\label{#3}
     \end{figure}%
-  }{\doplnit{Pridať obrázok \texttt{#1}: #2.}}%
 }
 
 \begin{document}
@@ -81,7 +78,7 @@ Zadanie vyžaduje nasledujúcich jedenásť prípadov použitia:
   \item Zobrazenie používateľov, ktorí píšu, a náhľad ich rozpracovaného textu.
 \end{enumerate}
 Klientská implementácia týchto prípadov používa skutočné serverové dáta.
-Automatické overenie a zostávajúce manuálne skúšky sú oddelené v závere dokumentu.
+Výsledky overenia sú uvedené v závere dokumentu.
 
 \subsection{Použité technológie}
 Server používa AdonisJS 7, TypeScript 6 a SQLite s ovládačom
@@ -127,7 +124,8 @@ Pri šírke najviac 700 px sa navigácia zmení na výsuvný panel.
 Pred otvorením mobilného dialógu sa najprv dokončí zatvorenie panelu.
 Výška konverzácie vychádza zo skutočnej výšky hlavičky a editora Quasar
 layoutu. Svetlý, tmavý a systémový motív využívajú Quasar Dark.
-Vizuálna kontrola oboch motívov a mobilnej šírky zatiaľ nie je vykonaná.
+Oba motívy a mobilná šírka 390\,px boli overené pri priechode aplikáciou
+opísanom v časti Overenie prípadov použitia.
 
 \subsection{Serverová časť}
 AdonisJS sprístupňuje API pod cestou \texttt{/api/v1}. Súbor
@@ -327,8 +325,9 @@ iného autora, stav online a povolený filter podľa serverových zmienok.
 Desktopové Notification API zobrazí prezývku autora, kanál a úryvok
 najviac 120 znakov. Kliknutie otvorí príslušný kanál. Povolenie žiada
 až používateľ tlačidlom v nastaveniach; zamietnutie a nepodporovaný
-prehliadač majú vysvetlenie. Skutočné systémové upozornenie zatiaľ
-nebolo vizuálne overené. Mobilná podpora cez service worker je odložená.
+prehliadač majú vysvetlenie. Systémové upozornenia boli overené pri skrytej
+karte vrátane filtra zmienok a stavu Nerušiť. Mobilná podpora cez service
+worker je súčasťou plánovanej PWA etapy.
 
 \subsection{Indikácia písania}
 WebSocket kanál prijíma od pripojeného člena udalosť \texttt{typing}
@@ -419,35 +418,48 @@ Aktuálna etapa nemá trvalú offline cache, inštaláciu PWA ani mobilné
 upozornenia cez service worker. Rozpísaný text neprežije obnovenie stránky.
 Systémové upozornenia vyžadujú podporovaný prehliadač a jeho povolenie.
 Objavené kanály sa pri neoznamovaných zmenách obnovia najneskôr pri
-ďalšom 15-sekundovom obnovení. Zostávajúce manuálne skúšky a chýbajúce
-runtime snímky sú uvedené v zázname overenia; vizuálny výsledok ešte
-nie je prijatý.
+ďalšom 15-sekundovom obnovení.
 
 \section{Kľúčové obrazovky}
-Päť aktuálnych runtime snímok zatiaľ chýba, pretože browserové
-ovládanie a Windows Computer Use boli pri overovaní nedostupné.
-Nasledujúce miesta sa doplnia po skutočnom priechode aplikáciou.
-Nesmú sa nahradiť obrázkami pôvodnej simulácie.
+Snímky zachytávajú skutočný priechod aplikáciou s tromi používateľmi
+(Jana, Peter a Marek), ktorí komunikujú cez lokálny server.
 
 \subsection{Prihlásenie a registrácia}
 \obrazok{assets/prihlasenie.png}{Prihlásenie a registrácia}{fig:prihlasenie}
-\doplnit{Popísať scenár na snímke.}
+Registrácia nového účtu. Formulár vyžaduje meno, priezvisko, jedinečnú
+prezývku, e-mail a heslo s potvrdením. Karta Prihlásenie vyžaduje iba
+e-mail a heslo. Tlačidlo vpravo hore prepína svetlý a tmavý režim.
 
 \subsection{Kanály a pozvánky}
 \obrazok{assets/kanaly.png}{Kanály a pozvánky}{fig:kanaly}
-\doplnit{Popísať scenár na snímke.}
+Bočný panel na šírke mobilu (390\,px) v tmavom režime. Navrchu je
+pozvánka do súkromného kanála \texttt{projekt} s tlačidlami Prijať
+a Odmietnuť. Pod ňou sú kanály, ktorých je používateľka členkou, a verejné
+kanály, ku ktorým sa môže pripojiť. Pri avatare je zvolený stav Nerušiť.
 
 \subsection{Konverzácia a história správ}
 \obrazok{assets/konverzacia.png}{Konverzácia a história správ}{fig:konverzacia}
-\doplnit{Popísať scenár na snímke.}
+Kanál \texttt{vpwa-tim} z pohľadu Jany. Vlastné správy sú vpravo, správy
+ostatných vľavo s menom, časom a stavom autora. Správa so zmienkou
+\texttt{@janka} je zvýraznená a označená „@pre vás“. Nad príkazovým
+riadkom je vidieť, že Peter práve píše; kliknutím sa otvorí náhľad jeho
+rozpísaného textu. Staršie správy sa načítajú pri posune nahor.
 
 \subsection{Správa členov kanála}
 \obrazok{assets/clenovia.png}{Správa členov kanála}{fig:clenovia}
-\doplnit{Popísať scenár na snímke.}
+Panel členov sa otvára tlačidlom s počtom členov alebo príkazom
+\texttt{/list}. Jana je správkyňou kanála, preto má pri ostatných
+členoch voľbu Zakázať prístup, ktorá zodpovedá príkazu \texttt{/kick}
+správcu. Bodka pri avatare zobrazuje stav člena.
 
 \subsection{Nastavenia, stav a upozornenia}
 \obrazok{assets/nastavenia.png}{Nastavenia, stav a upozornenia}{fig:nastavenia}
-\doplnit{Popísať scenár na snímke.}
+Nastavenia profilu. Dostupnosť Online, Nerušiť alebo Offline sa ukladá na
+server. Pri stave Nerušiť správy prichádzajú bez upozornení a nad
+konverzáciou sa zobrazí informačný pruh. Prepínač Iba správy adresované
+mne obmedzí upozornenia na zmienky. Tlačidlo požiada prehliadač
+o povolenie systémových upozornení. Nastavenia obsahujú aj voľbu motívu
+a odhlásenie.
 
 \section{Spustenie a overenie}
 \subsection{Požiadavky a konfigurácia}
@@ -507,16 +519,17 @@ Samostatná skúška \texttt{npm run test:restart} spustila server na porte
 3344, uložila správu, reštartovala tento proces a overila nové spojenie,
 obnovenie účtu z tokenu a načítanie uloženej správy z databázy.
 
-Všetkých jedenásť prípadov ešte treba prejsť cez výsledné rozhranie
-v dvoch profiloch. Neoverené zostávajú čerstvé snímky, mobilná šírka,
-oba motívy, poloha posunu histórie, obnovenie stránky, reštart servera
-počas konverzácie vo výslednom rozhraní a skutočné systémové upozornenie.
-Automatická skúška obnovy store a reštartu servera pritom prešla. Dôvodom
-chýbajúceho vizuálneho priechodu je chyba
-browserového ovládania a nedostupný Windows pomocník. Podrobná matica
-automatických dôkazov a manuálnych kontrol je v súbore
-\texttt{docs/overenie-klienta.md}. Tieto výsledky nie sú vizuálnym
-potvrdením hotového rozhrania.
+Dňa 11. 11. 2026 sme aplikáciu prešli v prehliadači Chromium s tromi
+samostatnými reláciami proti lokálnemu serveru. Overili sme registráciu,
+vytvorenie verejného aj súkromného kanála príkazom \texttt{/join},
+pozvánku a jej prijatie, správy a zmienky v reálnom čase, indikátor
+písania, 60 správ s načítaním staršej histórie pri posune nahor,
+obnovenie stránky so zachovaným prihlásením, príkaz \texttt{/list},
+zmenu stavu, svetlý aj tmavý režim a šírku mobilu 390\,px. Pri skrytej
+karte aplikácia vyvolala systémové upozornenie s autorom a textom správy,
+pri viditeľnej karte a v stave Nerušiť nie. Pri zapnutej voľbe Iba správy
+adresované mne vyvolala upozornenie len pre správu so zmienkou. Snímky
+v predchádzajúcej kapitole pochádzajú z tohto priechodu.
 
 \subsection{Overenie PWA}
 PWA skúška neprebehla, pretože PWA ešte nie je implementovaná.
@@ -530,7 +543,7 @@ siete, obnova spojenia, aktualizácie a požadované dôkazy.
 
   \bibitem{rlanz-socket}
   R. Lanz: \texttt{@rlanz/socket} -- WebSocket kanály pre AdonisJS.\newline
-  \url{https://github.com/RomainLanz/adonis-socket}
+  \url{https://github.com/RomainLanz/socket}
 
 \end{thebibliography}
 
