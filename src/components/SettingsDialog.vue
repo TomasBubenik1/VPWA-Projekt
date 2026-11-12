@@ -102,7 +102,7 @@ const notificationHelp = computed(() =>
       ? 'Upozornenia sú blokované. Povolenie môžete zmeniť v nastaveniach prehliadača.'
       : permission.value === 'unsupported'
         ? 'Tento prehliadač nepodporuje desktopové systémové upozornenia.'
-        : 'Pre upozornenia pri skrytej karte povoľte systémové upozornenia.',
+        : 'Bez povolenia sa upozornenie zobrazí iba v aplikácii po návrate do nej.',
 );
 watch(open, () => {
   permission.value = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
