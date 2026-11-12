@@ -7,14 +7,14 @@
       <q-card
         flat
         bordered
-        class="col-shrink message-bubble q-px-sm q-pt-sm q-pb-sm"
+        class="col-shrink message-bubble"
         :class="[`bg-${bubbleColor}`, sent ? 'text-white' : isDark ? 'text-grey-1' : 'text-dark']"
         :style="{ maxWidth: $q.screen.lt.sm ? '85%' : 'min(72%, 640px)' }"
       >
         <header v-if="!sent" class="row items-baseline text-body1">
           <span class="text-weight-bold q-mr-sm">{{ authorName }}</span>
           <time
-            class="text-body2 q-mr-sm text-no-wrap"
+            class="text-body2 text-no-wrap"
             :class="isDark ? (addressed ? 'text-grey-2' : 'text-grey-4') : 'text-grey-7'"
             :datetime="new Date(message.createdAt).toISOString()"
           >
@@ -22,7 +22,7 @@
           </time>
           <span
             v-if="addressed"
-            class="text-caption"
+            class="text-caption q-ml-sm"
             :class="isDark ? 'text-green-2' : 'text-teal-10'"
           >
             <q-icon name="alternate_email" size="13px" />pre vás
@@ -83,5 +83,11 @@ const formattedTime = computed(() =>
 .message-bubble {
   border-radius: 12px;
   overflow-wrap: anywhere;
+  padding: 6px 10px;
+}
+/* Tighter line height keeps the space above and below the text equal to the sides. */
+.message-bubble header,
+.message-bubble p {
+  line-height: 1.25;
 }
 </style>
