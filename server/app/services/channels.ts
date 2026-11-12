@@ -53,12 +53,22 @@ async function hasRow(
  * Creates the channel and its owner's membership. Returns null when the name is taken.
  */
 export async function createChannel(name: string, type: 'public' | 'private', ownerId: number) {
-  return db.transaction(async (trx) => {
+  const channel = await db.transaction(async (trx) => {
     if (await Channel.query({ client: trx }).where('name', name).first()) return null
-    const channel = await Channel.create({ name, type, ownerId }, { client: trx })
-    await trx.table('channel_memberships').insert({ channel_id: channel.id, user_id: ownerId })
-    return channel
+    const created = await Channel.create({ name, type, ownerId }, { client: trx })
+    await trx.table('channel_memberships').insert({ channel_id: created.id, user_id: ownerId })
+    return created
   })
+  // A new public channel appears in everyone's discovery list without a reload.
+  if (channel?.type === 'public') announceChannels(channel.id)
+  return channel
+}
+
+/**
+ * Global event telling every connected client to reload its channel lists.
+ */
+export function announceChannels(channelId: number) {
+  socket.broadcast('channels', { channelId })
 }
 
 /**
@@ -91,6 +101,7 @@ export async function deleteChannel(channelId: number) {
   await db.from('channels').where('id', channelId).delete()
   socket.to(`channels/${channelId}`).emit('deleted', { channelId })
   disconnectChannel(channelId)
+  announceChannels(channelId)
 }
 
 /**

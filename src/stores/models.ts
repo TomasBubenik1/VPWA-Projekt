@@ -70,5 +70,4 @@ export interface LiveDraft {
   nickname: string;
   body: string;
   active: boolean;
-  updatedAt: number;
 }

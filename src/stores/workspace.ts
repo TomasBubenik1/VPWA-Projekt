@@ -444,7 +444,6 @@ export function createWorkspaceStore(
       ...state.liveDrafts[key],
       ...('content' in patch ? { body: patch.content ?? '' } : {}),
       active: true,
-      updatedAt: Date.now(),
     };
   }
   async function syncSubscriptions() {
@@ -564,6 +563,10 @@ export function createWorkspaceStore(
             for (const [key, draft] of Object.entries(state.liveDrafts))
               if (draft.userId === event.userId) delete state.liveDrafts[key];
         });
+        // A public channel was created or a channel was deleted somewhere.
+        connection.on('channels', () => {
+          void refresh().catch(report);
+        });
         await connection.connect();
         if (version !== generation || socket !== connection) {
           connection.disconnect();
@@ -640,15 +643,6 @@ export function createWorkspaceStore(
     state.networkOnline = false;
     stopRealtime();
   }
-  const expiryTimer = setInterval(() => {
-    for (const [key, draft] of Object.entries(state.liveDrafts))
-      if (Date.now() - draft.updatedAt > 10000) delete state.liveDrafts[key];
-  }, 2000);
-  // Discovery changes and declined/deleted invitations have no dedicated global event.
-  const refreshTimer = setInterval(() => {
-    if (state.user && state.status !== 'offline' && state.networkOnline)
-      void refresh().catch(report);
-  }, 15000);
   if (typeof window !== 'undefined') {
     window.addEventListener('online', online);
     window.addEventListener('offline', offline);
@@ -656,8 +650,6 @@ export function createWorkspaceStore(
   function dispose() {
     disposed = true;
     clearSession();
-    clearInterval(expiryTimer);
-    clearInterval(refreshTimer);
     incoming.clear();
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', online);
